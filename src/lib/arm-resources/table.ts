@@ -4,15 +4,15 @@ export function generateTableResource(schema: TableSchema, _workspaceResourceId:
   return {
     type: "Microsoft.OperationalInsights/workspaces/tables",
     apiVersion: "2025-07-01",
-    name: `[concat(parameters('workspace'), '/${schema.tableName}')]`,
+    name: schema.tableName,
     properties: {
       schema: {
         name: schema.tableName,
-        columns: schema.columns.map(col => ({
+        columns: schema.columns.map((col) => ({
           name: col.name,
           type: col.type,
         })),
       },
     },
-  }
+  };
 }
