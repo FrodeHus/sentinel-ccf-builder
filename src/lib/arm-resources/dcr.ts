@@ -17,14 +17,11 @@ export function generateDcrResource(
     apiVersion: "2023-03-11",
     name: dcrName,
     location: "[parameters('workspace-location')]",
-    dependsOn: [
-      `[concat(variables('workspaceResourceId'), '/tables/', '${schema.tableName}')]`,
-    ],
     properties: {
       dataCollectionEndpointId: `[concat(subscription().id, '/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Insights/dataCollectionEndpoints/', split(parameters('workspace'), '/')[8], '-dce')]`,
       streamDeclarations: {
         [dataFlow.streamName]: {
-          columns: inputColumns.map(col => ({
+          columns: inputColumns.map((col) => ({
             name: col.name,
             type: col.type,
           })),
@@ -48,5 +45,5 @@ export function generateDcrResource(
         },
       ],
     },
-  }
+  };
 }
