@@ -88,6 +88,8 @@ export function ConnectorWizard() {
   const handleReset = () => {
     if (confirm("Reset all configuration and start fresh?")) {
       reset();
+      setCurrentStep(0);
+      setVisitedSteps(new Set([0]));
     }
   };
 
