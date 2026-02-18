@@ -9,7 +9,7 @@ import { StepConnectorUI } from "./StepConnectorUI"
 import { StepExport } from "./StepExport"
 import { ArmTemplatePreview } from "@/components/preview/ArmTemplatePreview"
 import { Button } from "@/components/ui/button"
-import { ChevronLeft, ChevronRight, Eye, EyeOff, RotateCcw, Moon, Sun } from "lucide-react"
+import { ChevronLeft, ChevronRight, Eye, EyeOff, RotateCcw, Moon, Sun, Github } from "lucide-react"
 import {
   connectorIdToTableName,
   tableNameToStreamName,
@@ -127,6 +127,15 @@ export function ConnectorWizard() {
             </p>
           </div>
           <div className="flex gap-2">
+            <a
+              href="https://github.com/FrodeHus/sentinel-ccf-builder"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="View on GitHub"
+              className="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 w-9 hover:bg-accent hover:text-accent-foreground transition-colors"
+            >
+              <Github className="w-4 h-4" />
+            </a>
             <Button
               variant="ghost"
               size="icon"
