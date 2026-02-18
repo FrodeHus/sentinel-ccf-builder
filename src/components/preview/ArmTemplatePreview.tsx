@@ -138,7 +138,12 @@ export function ArmTemplatePreview() {
       <CardContent className="flex-1 overflow-hidden p-0 pb-5 px-5 pt-4">
         <div className="h-full rounded-lg border border-border/50 bg-card/30 overflow-auto">
           <pre className="p-4 text-xs font-mono leading-relaxed">
-            <code dangerouslySetInnerHTML={{ __html: highlightJson(content[activeTab]) }} />
+            <code>{content[activeTab].split("\n").map((line, i) => (
+              <div key={i} className="flex">
+                <span className="inline-block w-8 shrink-0 text-right pr-3 select-none text-muted-foreground/50">{i + 1}</span>
+                <span dangerouslySetInnerHTML={{ __html: highlightJson(line) || " " }} />
+              </div>
+            ))}</code>
           </pre>
         </div>
       </CardContent>
