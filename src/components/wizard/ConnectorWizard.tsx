@@ -126,7 +126,7 @@ export function ConnectorWizard() {
               connectors
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-1">
             <a
               href="https://github.com/FrodeHus/sentinel-ccf-builder"
               target="_blank"
@@ -152,8 +152,8 @@ export function ConnectorWizard() {
                 <Moon className="w-4 h-4" />
               )}
             </Button>
-            <Button variant="ghost" size="sm" onClick={handleReset}>
-              <RotateCcw className="w-4 h-4 mr-1.5" /> Reset
+            <Button variant="ghost" size="icon" onClick={handleReset} title="Reset">
+              <RotateCcw className="w-4 h-4" />
             </Button>
           </div>
         </div>
