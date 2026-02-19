@@ -1,9 +1,10 @@
 import * as React from "react"
-import type { ConnectorConfig } from "@/lib/schemas"
-import { ConnectorConfigSchema } from "@/lib/schemas"
+import type { ConnectorConfig, ConnectorData, AppState } from "@/lib/schemas"
+import { ConnectorDataSchema, AppStateSchema } from "@/lib/schemas"
 import { saveConfig, loadConfig, clearConfig } from "@/lib/persistence"
 
 interface ConnectorConfigContextValue {
+  /** Combined view: active connector data + shared solution (backwards-compatible shape) */
   config: ConnectorConfig
   updateConfig: (updater: (prev: ConnectorConfig) => ConnectorConfig) => void
   updateMeta: (meta: Partial<ConnectorConfig["meta"]>) => void
@@ -15,23 +16,30 @@ interface ConnectorConfigContextValue {
   hasSavedConfig: boolean
   dismissSavedConfig: () => void
   resumeSavedConfig: () => void
+
+  // Multi-connector API
+  connectors: ConnectorData[]
+  activeConnectorIndex: number
+  addConnector: () => void
+  removeConnector: (index: number) => void
+  setActiveConnector: (index: number) => void
 }
 
 const ConnectorConfigContext = React.createContext<ConnectorConfigContextValue | null>(null)
 
-function createDefaultConfig(): ConnectorConfig {
-  return ConnectorConfigSchema.parse({})
+function createDefaultAppState(): AppState {
+  return AppStateSchema.parse({})
 }
 
 export function ConnectorConfigProvider({ children }: { children: React.ReactNode }) {
   const [hasSavedConfig, setHasSavedConfig] = React.useState(false)
-  const [config, setConfig] = React.useState<ConnectorConfig>(createDefaultConfig)
-  const savedConfigRef = React.useRef<ConnectorConfig | null>(null)
+  const [appState, setAppState] = React.useState<AppState>(createDefaultAppState)
+  const savedStateRef = React.useRef<AppState | null>(null)
 
   React.useEffect(() => {
     const saved = loadConfig()
     if (saved) {
-      savedConfigRef.current = saved
+      savedStateRef.current = saved
       setHasSavedConfig(true)
     }
   }, [])
@@ -40,37 +48,128 @@ export function ConnectorConfigProvider({ children }: { children: React.ReactNod
   // the previously saved config with the fresh defaults before the user decides.
   React.useEffect(() => {
     if (!hasSavedConfig) {
-      saveConfig(config)
+      saveConfig(appState)
     }
-  }, [config, hasSavedConfig])
+  }, [appState, hasSavedConfig])
 
-  const updateConfig = React.useCallback((updater: (prev: ConnectorConfig) => ConnectorConfig) => {
-    setConfig(updater)
+  // Computed backwards-compatible config: active connector + shared solution
+  const config = React.useMemo<ConnectorConfig>(() => {
+    const c = appState.connectors[appState.activeConnectorIndex] ?? appState.connectors[0]
+    return {
+      meta: c.meta,
+      schema: c.schema,
+      dataFlow: c.dataFlow,
+      connectorUI: c.connectorUI,
+      solution: appState.solution,
+    }
+  }, [appState])
+
+  // Helper to update the active connector
+  const updateActiveConnector = React.useCallback(
+    (updater: (prev: ConnectorData) => ConnectorData) => {
+      setAppState((prev) => {
+        const updated = [...prev.connectors]
+        updated[prev.activeConnectorIndex] = updater(updated[prev.activeConnectorIndex])
+        return { ...prev, connectors: updated }
+      })
+    },
+    [],
+  )
+
+  const updateConfig = React.useCallback(
+    (updater: (prev: ConnectorConfig) => ConnectorConfig) => {
+      setAppState((prev) => {
+        const activeConnector = prev.connectors[prev.activeConnectorIndex]
+        const oldConfig: ConnectorConfig = {
+          ...activeConnector,
+          solution: prev.solution,
+        }
+        const newConfig = updater(oldConfig)
+        const updatedConnectors = [...prev.connectors]
+        updatedConnectors[prev.activeConnectorIndex] = {
+          meta: newConfig.meta,
+          schema: newConfig.schema,
+          dataFlow: newConfig.dataFlow,
+          connectorUI: newConfig.connectorUI,
+        }
+        return {
+          ...prev,
+          connectors: updatedConnectors,
+          solution: newConfig.solution,
+        }
+      })
+    },
+    [],
+  )
+
+  const updateMeta = React.useCallback(
+    (meta: Partial<ConnectorConfig["meta"]>) => {
+      updateActiveConnector((prev) => ({ ...prev, meta: { ...prev.meta, ...meta } }))
+    },
+    [updateActiveConnector],
+  )
+
+  const updateSchema = React.useCallback(
+    (schema: Partial<ConnectorConfig["schema"]>) => {
+      updateActiveConnector((prev) => ({ ...prev, schema: { ...prev.schema, ...schema } }))
+    },
+    [updateActiveConnector],
+  )
+
+  const updateDataFlow = React.useCallback(
+    (dataFlow: Partial<ConnectorConfig["dataFlow"]>) => {
+      updateActiveConnector((prev) => ({ ...prev, dataFlow: { ...prev.dataFlow, ...dataFlow } }))
+    },
+    [updateActiveConnector],
+  )
+
+  const updateConnectorUI = React.useCallback(
+    (connectorUI: Partial<ConnectorConfig["connectorUI"]>) => {
+      updateActiveConnector((prev) => ({
+        ...prev,
+        connectorUI: { ...prev.connectorUI, ...connectorUI },
+      }))
+    },
+    [updateActiveConnector],
+  )
+
+  const updateSolution = React.useCallback(
+    (solution: Partial<ConnectorConfig["solution"]>) => {
+      setAppState((prev) => ({ ...prev, solution: { ...prev.solution, ...solution } }))
+    },
+    [],
+  )
+
+  const addConnector = React.useCallback(() => {
+    setAppState((prev) => ({
+      ...prev,
+      connectors: [...prev.connectors, ConnectorDataSchema.parse({})],
+      activeConnectorIndex: prev.connectors.length,
+    }))
   }, [])
 
-  const updateMeta = React.useCallback((meta: Partial<ConnectorConfig["meta"]>) => {
-    setConfig(prev => ({ ...prev, meta: { ...prev.meta, ...meta } }))
+  const removeConnector = React.useCallback((index: number) => {
+    setAppState((prev) => {
+      if (prev.connectors.length <= 1) return prev
+      const updated = prev.connectors.filter((_, i) => i !== index)
+      return {
+        ...prev,
+        connectors: updated,
+        activeConnectorIndex: Math.min(prev.activeConnectorIndex, updated.length - 1),
+      }
+    })
   }, [])
 
-  const updateSchema = React.useCallback((schema: Partial<ConnectorConfig["schema"]>) => {
-    setConfig(prev => ({ ...prev, schema: { ...prev.schema, ...schema } }))
-  }, [])
-
-  const updateDataFlow = React.useCallback((dataFlow: Partial<ConnectorConfig["dataFlow"]>) => {
-    setConfig(prev => ({ ...prev, dataFlow: { ...prev.dataFlow, ...dataFlow } }))
-  }, [])
-
-  const updateConnectorUI = React.useCallback((connectorUI: Partial<ConnectorConfig["connectorUI"]>) => {
-    setConfig(prev => ({ ...prev, connectorUI: { ...prev.connectorUI, ...connectorUI } }))
-  }, [])
-
-  const updateSolution = React.useCallback((solution: Partial<ConnectorConfig["solution"]>) => {
-    setConfig(prev => ({ ...prev, solution: { ...prev.solution, ...solution } }))
+  const setActiveConnector = React.useCallback((index: number) => {
+    setAppState((prev) => {
+      if (index < 0 || index >= prev.connectors.length) return prev
+      return { ...prev, activeConnectorIndex: index }
+    })
   }, [])
 
   const reset = React.useCallback(() => {
     clearConfig()
-    setConfig(createDefaultConfig())
+    setAppState(createDefaultAppState())
     setHasSavedConfig(false)
   }, [])
 
@@ -79,26 +178,51 @@ export function ConnectorConfigProvider({ children }: { children: React.ReactNod
   }, [])
 
   const resumeSavedConfig = React.useCallback(() => {
-    if (savedConfigRef.current) {
-      setConfig(savedConfigRef.current)
-      savedConfigRef.current = null
+    if (savedStateRef.current) {
+      setAppState(savedStateRef.current)
+      savedStateRef.current = null
     }
     setHasSavedConfig(false)
   }, [])
 
-  const value = React.useMemo(() => ({
-    config,
-    updateConfig,
-    updateMeta,
-    updateSchema,
-    updateDataFlow,
-    updateConnectorUI,
-    updateSolution,
-    reset,
-    hasSavedConfig,
-    dismissSavedConfig,
-    resumeSavedConfig,
-  }), [config, updateConfig, updateMeta, updateSchema, updateDataFlow, updateConnectorUI, updateSolution, reset, hasSavedConfig, dismissSavedConfig, resumeSavedConfig])
+  const value = React.useMemo(
+    () => ({
+      config,
+      updateConfig,
+      updateMeta,
+      updateSchema,
+      updateDataFlow,
+      updateConnectorUI,
+      updateSolution,
+      reset,
+      hasSavedConfig,
+      dismissSavedConfig,
+      resumeSavedConfig,
+      connectors: appState.connectors,
+      activeConnectorIndex: appState.activeConnectorIndex,
+      addConnector,
+      removeConnector,
+      setActiveConnector,
+    }),
+    [
+      config,
+      updateConfig,
+      updateMeta,
+      updateSchema,
+      updateDataFlow,
+      updateConnectorUI,
+      updateSolution,
+      reset,
+      hasSavedConfig,
+      dismissSavedConfig,
+      resumeSavedConfig,
+      appState.connectors,
+      appState.activeConnectorIndex,
+      addConnector,
+      removeConnector,
+      setActiveConnector,
+    ],
+  )
 
   return (
     <ConnectorConfigContext.Provider value={value}>

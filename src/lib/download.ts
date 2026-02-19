@@ -1,6 +1,6 @@
 import { saveAs } from "file-saver"
 import JSZip from "jszip"
-import type { ConnectorConfig } from "./schemas";
+import type { ConnectorConfig, AppState } from "./schemas";
 import { generateTableResource } from "./arm-resources/table";
 import { generateDcrResource } from "./arm-resources/dcr";
 import { generateConnectorDefinition } from "./arm-resources/connector-def";
@@ -40,78 +40,94 @@ export function downloadIndividualFile(
   }
 }
 
-export async function downloadSolutionZip(config: ConnectorConfig) {
-  const { meta, schema, dataFlow, connectorUI, solution } = config;
-  const connectorName = meta.connectorId;
-  const dcrName = connectorIdToDcrName(meta.connectorId);
+export async function downloadSolutionZip(appState: AppState) {
+  const { solution, connectors } = appState;
+  const solutionName =
+    solution.name || connectors[0]?.meta.connectorId || "MySolution";
   const zip = new JSZip();
 
-  const root = zip.folder(connectorName)!;
+  const root = zip.folder(solutionName)!;
+  const dataConnectorsFolder = root.folder("Data Connectors")!;
+  const connectorPaths: string[] = [];
 
-  // Data Connectors folder
-  const dcFolder = root
-    .folder("Data Connectors")!
-    .folder(`${connectorName}_ccf`)!;
-  dcFolder.file(
-    "table.json",
-    JSON.stringify(generateTableResource(schema, ""), null, 2),
-  );
-  dcFolder.file(
-    "DCR.json",
-    JSON.stringify(generateDcrResource(schema, dataFlow, dcrName), null, 2),
-  );
-  dcFolder.file(
-    "connectorDefinition.json",
-    JSON.stringify(
-      generateConnectorDefinition(meta, schema, connectorUI),
-      null,
-      2,
-    ),
-  );
-  dcFolder.file(
-    "dataConnector.json",
-    JSON.stringify(generateDataConnector(meta, dataFlow), null, 2),
-  );
+  // Generate files for each connector
+  for (const connector of connectors) {
+    const { meta, schema, dataFlow, connectorUI } = connector;
+    const dcrName = connectorIdToDcrName(meta.connectorId);
+    const connectorFolder = dataConnectorsFolder.folder(
+      `${meta.connectorId}_ccf`,
+    )!;
+
+    connectorFolder.file(
+      "table.json",
+      JSON.stringify(generateTableResource(schema, ""), null, 2),
+    );
+    connectorFolder.file(
+      "DCR.json",
+      JSON.stringify(generateDcrResource(schema, dataFlow, dcrName), null, 2),
+    );
+    connectorFolder.file(
+      "connectorDefinition.json",
+      JSON.stringify(
+        generateConnectorDefinition(meta, schema, connectorUI),
+        null,
+        2,
+      ),
+    );
+    connectorFolder.file(
+      "dataConnector.json",
+      JSON.stringify(generateDataConnector(meta, dataFlow), null, 2),
+    );
+
+    connectorPaths.push(
+      `Data Connectors/${meta.connectorId}_ccf/connectorDefinition.json`,
+    );
+  }
 
   // Data folder with solution metadata
   const dataFolder = root.folder("Data")!;
+  const firstConnector = connectors[0];
   const solutionDataFile = {
-    Name: connectorName,
-    Author: `${meta.publisher} - ${solution.support.email}`,
-    Logo: meta.logo ?? "",
-    Description: meta.descriptionMarkdown,
-    "Data Connectors": [
-      `Data Connectors/${connectorName}_ccf/connectorDefinition.json`,
-    ],
-    BasePath: `C:\\GitHub\\Azure-Sentinel\\Solutions\\${connectorName}`,
+    Name: solutionName,
+    Author: `${firstConnector?.meta.publisher || "Publisher"} - ${solution.support.email}`,
+    Logo: firstConnector?.meta.logo ?? "",
+    Description: firstConnector?.meta.descriptionMarkdown || "",
+    "Data Connectors": connectorPaths,
+    BasePath: `C:\\GitHub\\Azure-Sentinel\\Solutions\\${solutionName}`,
     Version: solution.version,
     Metadata: "SolutionMetadata.json",
     TemplateSpec: true,
     Is1PConnector: false,
   };
   dataFolder.file(
-    `Solution_${connectorName}.json`,
+    `Solution_${solutionName}.json`,
     JSON.stringify(solutionDataFile, null, 2),
   );
 
   // SolutionMetadata.json
+  const uniquePublishers = [
+    ...new Set(connectors.map((c) => c.meta.publisher).filter(Boolean)),
+  ];
   const solutionMetadata = {
     publisherId: solution.publisherId,
     offerId: solution.offerId,
     firstPublishDate: solution.firstPublishDate,
     lastPublishDate: solution.firstPublishDate,
-    providers: [meta.publisher],
+    providers: uniquePublishers.length > 0 ? uniquePublishers : [""],
     categories: solution.categories,
     support: solution.support,
   };
-  root.file("SolutionMetadata.json", JSON.stringify(solutionMetadata, null, 2));
+  root.file(
+    "SolutionMetadata.json",
+    JSON.stringify(solutionMetadata, null, 2),
+  );
 
   // ReleaseNotes.md
   root.file(
     "ReleaseNotes.md",
-    `# ${meta.title}\n\n## v${solution.version}\n\n- Initial release\n`,
+    `# ${solutionName}\n\n## v${solution.version}\n\n- Initial release\n`,
   );
 
   const blob = await zip.generateAsync({ type: "blob" });
-  saveAs(blob, `${connectorName}.zip`);
+  saveAs(blob, `${solutionName}.zip`);
 }

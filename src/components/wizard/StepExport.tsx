@@ -19,7 +19,7 @@ import {
 import { Download, FolderArchive, ChevronDown, HelpCircle } from "lucide-react";
 
 export function StepExport() {
-  const { config, updateSolution } = useConnectorConfig();
+  const { config, connectors, activeConnectorIndex, updateSolution } = useConnectorConfig();
   const { solution } = config;
   const [expanded, setExpanded] = React.useState(false);
 
@@ -33,6 +33,19 @@ export function StepExport() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="solutionName">Solution Name</Label>
+            <Input
+              id="solutionName"
+              placeholder="e.g., ContosoSecuritySolution"
+              value={solution.name}
+              onChange={(e) => updateSolution({ name: e.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              Name used for the solution package folder. Defaults to the first connector ID if empty.
+            </p>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="publisherId">Publisher ID *</Label>
@@ -159,7 +172,7 @@ export function StepExport() {
         </CardHeader>
         <CardContent className="space-y-3">
           <Button
-            onClick={() => downloadSolutionZip(config)}
+            onClick={() => downloadSolutionZip({ solution: config.solution, connectors, activeConnectorIndex })}
             className="w-full justify-start"
             size="lg"
           >

@@ -1,14 +1,14 @@
-import type { ConnectorConfig } from "./schemas"
+import type { AppState } from "./schemas"
 
 const STORAGE_KEY = "sentinel-ccf-builder-config"
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-export function saveConfig(config: ConnectorConfig): void {
+export function saveConfig(state: AppState): void {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch {
       // localStorage may be unavailable (private browsing) or full — config is still
       // held in memory for the current session, so the user can still export.
@@ -16,11 +16,29 @@ export function saveConfig(config: ConnectorConfig): void {
   }, 500);
 }
 
-export function loadConfig(): ConnectorConfig | null {
+export function loadConfig(): AppState | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return null;
-    return JSON.parse(stored) as ConnectorConfig;
+    const parsed = JSON.parse(stored);
+
+    // Migrate old format: single ConnectorConfig → AppState
+    if ("meta" in parsed && !("connectors" in parsed)) {
+      return {
+        solution: parsed.solution ?? {},
+        connectors: [
+          {
+            meta: parsed.meta,
+            schema: parsed.schema,
+            dataFlow: parsed.dataFlow,
+            connectorUI: parsed.connectorUI,
+          },
+        ],
+        activeConnectorIndex: 0,
+      } as AppState;
+    }
+
+    return parsed as AppState;
   } catch {
     // JSON.parse throws if the stored value is corrupt; treat as no saved config.
     return null;
@@ -35,13 +53,13 @@ export function clearConfig(): void {
   }
 }
 
-export function exportConfig(config: ConnectorConfig): string {
-  return JSON.stringify(config, null, 2)
+export function exportConfig(state: AppState): string {
+  return JSON.stringify(state, null, 2)
 }
 
-export function importConfig(json: string): ConnectorConfig | null {
+export function importConfig(json: string): AppState | null {
   try {
-    return JSON.parse(json) as ConnectorConfig
+    return JSON.parse(json) as AppState
   } catch {
     return null
   }

@@ -7,6 +7,7 @@ import { StepSchema } from "./StepSchema"
 import { StepDcr } from "./StepDcr"
 import { StepConnectorUI } from "./StepConnectorUI"
 import { StepExport } from "./StepExport"
+import { ConnectorSidebar } from "./ConnectorSidebar"
 import { ArmTemplatePreview } from "@/components/preview/ArmTemplatePreview"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight, Eye, EyeOff, RotateCcw, Moon, Sun, Github } from "lucide-react"
@@ -16,7 +17,11 @@ import {
 } from "@/lib/naming"
 
 export function ConnectorWizard() {
-  const { config, updateSchema, updateDataFlow, hasSavedConfig, resumeSavedConfig, dismissSavedConfig, reset } = useConnectorConfig()
+  const {
+    config, updateSchema, updateDataFlow,
+    hasSavedConfig, resumeSavedConfig, dismissSavedConfig, reset,
+    connectors, activeConnectorIndex, addConnector, removeConnector, setActiveConnector,
+  } = useConnectorConfig()
   const { theme, toggleTheme } = useTheme()
   const [currentStep, setCurrentStep] = React.useState(0)
   const [visitedSteps, setVisitedSteps] = React.useState(new Set([0]))
@@ -41,17 +46,23 @@ export function ConnectorWizard() {
   const steps: StepInfo[] = [
     {
       label: "Basics",
-      isValid: !!config.meta.connectorId && !!config.meta.title && !!config.meta.publisher && !!config.meta.descriptionMarkdown,
+      isValid: connectors.every(c =>
+        !!c.meta.connectorId && !!c.meta.title && !!c.meta.publisher && !!c.meta.descriptionMarkdown,
+      ),
       isVisited: visitedSteps.has(0),
     },
     {
       label: "Schema",
-      isValid: !!config.schema.tableName && config.schema.tableName.endsWith("_CL") && config.schema.columns.length >= 1,
+      isValid: connectors.every(c =>
+        !!c.schema.tableName && c.schema.tableName.endsWith("_CL") && c.schema.columns.length >= 1,
+      ),
       isVisited: visitedSteps.has(1),
     },
     {
       label: "DCR",
-      isValid: !!config.dataFlow.streamName && config.dataFlow.streamName.startsWith("Custom-") && !!config.dataFlow.transformKql,
+      isValid: connectors.every(c =>
+        !!c.dataFlow.streamName && c.dataFlow.streamName.startsWith("Custom-") && !!c.dataFlow.transformKql,
+      ),
       isVisited: visitedSteps.has(2),
     },
     {
@@ -167,6 +178,17 @@ export function ConnectorWizard() {
       {/* Main content */}
       <div className="flex-1 overflow-hidden">
         <div className="h-full flex">
+          {/* Connector sidebar — visible on connector steps (0-3), hidden on Export */}
+          {currentStep < 4 && (
+            <ConnectorSidebar
+              connectors={connectors}
+              activeIndex={activeConnectorIndex}
+              onSelect={setActiveConnector}
+              onAdd={addConnector}
+              onRemove={removeConnector}
+            />
+          )}
+
           {/* Form panel */}
           <div
             className={`${showPreview ? "w-full lg:w-3/5" : "w-full"} overflow-auto p-6 transition-all`}

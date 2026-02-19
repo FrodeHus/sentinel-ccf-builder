@@ -94,6 +94,7 @@ export const ConnectorUISchema = z.object({
 })
 
 export const SolutionSchema = z.object({
+  name: z.string().default(""),
   publisherId: z.string().default(""),
   offerId: z.string().default(""),
   version: z.string().default("1.0.0"),
@@ -161,6 +162,23 @@ export const SolutionValidation = z.object({
   }),
 })
 
+// --- Per-connector data (steps 1-4) ---
+
+export const ConnectorDataSchema = z.object({
+  meta: MetaSchema.default({}),
+  schema: TableSchemaSchema.default({}),
+  dataFlow: DataFlowSchema.default({}),
+  connectorUI: ConnectorUISchema.default({}),
+})
+
+// --- Top-level app state (solution shared across connectors) ---
+
+export const AppStateSchema = z.object({
+  solution: SolutionSchema.default({}),
+  connectors: z.array(ConnectorDataSchema).default([ConnectorDataSchema.parse({})]),
+  activeConnectorIndex: z.number().default(0),
+})
+
 // --- Inferred types ---
 
 export type Column = z.infer<typeof ColumnSchema>
@@ -176,3 +194,5 @@ export type Instruction = z.infer<typeof InstructionSchema>
 export type ConnectorUI = z.infer<typeof ConnectorUISchema>
 export type Solution = z.infer<typeof SolutionSchema>
 export type ConnectorConfig = z.infer<typeof ConnectorConfigSchema>
+export type ConnectorData = z.infer<typeof ConnectorDataSchema>
+export type AppState = z.infer<typeof AppStateSchema>
