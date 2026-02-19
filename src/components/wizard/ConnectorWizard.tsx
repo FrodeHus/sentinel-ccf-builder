@@ -130,7 +130,7 @@ export function ConnectorWizard() {
         <div className="px-6 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Sentinel CCF Push Connector Builder
+              Sentinel CCF Push Connector Solution Builder
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               Build Microsoft Sentinel Codeless Connector Framework (CCF) push
@@ -163,7 +163,12 @@ export function ConnectorWizard() {
                 <Moon className="w-4 h-4" />
               )}
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleReset} title="Reset">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleReset}
+              title="Reset"
+            >
               <RotateCcw className="w-4 h-4" />
             </Button>
           </div>
