@@ -13,28 +13,33 @@ const KQL_SNIPPETS = [
 interface KqlEditorProps {
   value: string
   onChange: (value: string) => void
+  height?: string
+  showSnippets?: boolean
+  mode?: "dcr" | "full"
 }
 
-export function KqlEditor({ value, onChange }: KqlEditorProps) {
+export function KqlEditor({ value, onChange, height = "120px", showSnippets = true, mode = "dcr" }: KqlEditorProps) {
   const { theme } = useTheme()
-  const extensions = React.useMemo(() => kql(theme), [theme])
+  const extensions = React.useMemo(() => kql(theme, mode), [theme, mode])
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap gap-2">
-        <span className="text-xs text-muted-foreground self-center">Snippets:</span>
-        {KQL_SNIPPETS.map(snippet => (
-          <Button
-            key={snippet.label}
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={() => onChange(snippet.value)}
-          >
-            {snippet.label}
-          </Button>
-        ))}
-      </div>
+      {showSnippets && (
+        <div className="flex flex-wrap gap-2">
+          <span className="text-xs text-muted-foreground self-center">Snippets:</span>
+          {KQL_SNIPPETS.map(snippet => (
+            <Button
+              key={snippet.label}
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              onClick={() => onChange(snippet.value)}
+            >
+              {snippet.label}
+            </Button>
+          ))}
+        </div>
+      )}
 
       <div className="rounded-md border overflow-hidden">
         <CodeMirror
@@ -42,7 +47,7 @@ export function KqlEditor({ value, onChange }: KqlEditorProps) {
           onChange={onChange}
           theme={theme}
           extensions={extensions}
-          height="120px"
+          height={height}
           basicSetup={{
             lineNumbers: true,
             foldGutter: false,
@@ -51,11 +56,13 @@ export function KqlEditor({ value, onChange }: KqlEditorProps) {
         />
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        <code>source</code> refers to the incoming data stream. Use <code>extend</code> to add columns,{" "}
-        <code>project</code> to select/rename, <code>where</code> to filter.
-        The transform must produce columns matching the output table schema.
-      </p>
+      {showSnippets && (
+        <p className="text-xs text-muted-foreground">
+          <code>source</code> refers to the incoming data stream. Use <code>extend</code> to add columns,{" "}
+          <code>project</code> to select/rename, <code>where</code> to filter.
+          The transform must produce columns matching the output table schema.
+        </p>
+      )}
     </div>
   )
 }

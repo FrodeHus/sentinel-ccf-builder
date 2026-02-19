@@ -229,12 +229,14 @@ const kqlDarkHighlight = HighlightStyle.define([
   { tag: tags.variableName, color: "#f0eeff" },
 ])
 
-export function kql(variant: "light" | "dark" = "light"): Extension[] {
+export function kql(variant: "light" | "dark" = "light", mode: "dcr" | "full" = "dcr"): Extension[] {
   const highlight = variant === "dark" ? kqlDarkHighlight : kqlLightHighlight
-  return [
+  const extensions: Extension[] = [
     new LanguageSupport(kqlStreamLanguage),
     syntaxHighlighting(highlight),
-    kqlLint,
-    lintGutter(),
   ]
+  if (mode === "dcr") {
+    extensions.push(kqlLint, lintGutter())
+  }
+  return extensions
 }

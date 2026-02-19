@@ -1,9 +1,9 @@
 import * as React from "react"
 import { useConnectorConfig } from "@/hooks/useConnectorConfig"
 import { InstructionStepEditor } from "@/components/instruction-editor/InstructionStepEditor"
+import { KqlEditor } from "@/components/kql-editor/KqlEditor"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
@@ -136,15 +136,16 @@ export function StepConnectorUI() {
                         }}
                         className="text-sm"
                       />
-                      <Input
-                        placeholder="Base query"
+                      <KqlEditor
                         value={gq.baseQuery}
-                        onChange={(e) => {
+                        onChange={(val) => {
                           const updated = [...connectorUI.graphQueries];
-                          updated[i] = { ...gq, baseQuery: e.target.value };
+                          updated[i] = { ...gq, baseQuery: val };
                           updateConnectorUI({ graphQueries: updated });
                         }}
-                        className="text-sm font-mono"
+                        height="60px"
+                        showSnippets={false}
+                        mode="full"
                       />
                     </CardContent>
                   </Card>
@@ -202,16 +203,16 @@ export function StepConnectorUI() {
                         }}
                         className="text-sm"
                       />
-                      <Textarea
-                        placeholder="KQL Query"
+                      <KqlEditor
                         value={sq.query}
-                        onChange={(e) => {
+                        onChange={(val) => {
                           const updated = [...connectorUI.sampleQueries];
-                          updated[i] = { ...sq, query: e.target.value };
+                          updated[i] = { ...sq, query: val };
                           updateConnectorUI({ sampleQueries: updated });
                         }}
-                        rows={2}
-                        className="text-sm font-mono"
+                        height="80px"
+                        showSnippets={false}
+                        mode="full"
                       />
                     </CardContent>
                   </Card>
@@ -230,17 +231,17 @@ export function StepConnectorUI() {
                   Connectivity Criteria
                 </Label>
                 {connectorUI.connectivityCriteria.map((cc, i) => (
-                  <Textarea
+                  <KqlEditor
                     key={i}
                     value={cc.value.join("\n")}
-                    onChange={(e) => {
+                    onChange={(val) => {
                       const updated = [...connectorUI.connectivityCriteria];
-                      updated[i] = { ...cc, value: [e.target.value] };
+                      updated[i] = { ...cc, value: [val] };
                       updateConnectorUI({ connectivityCriteria: updated });
                     }}
-                    rows={3}
-                    className="text-sm font-mono"
-                    placeholder="IsConnectedQuery KQL..."
+                    height="80px"
+                    showSnippets={false}
+                    mode="full"
                   />
                 ))}
               </div>
