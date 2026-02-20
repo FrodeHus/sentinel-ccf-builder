@@ -33,6 +33,25 @@ The UX is designed for users who may have no prior experience with ARM templates
 
 ## Getting Started
 
+### Docker Quickstart
+
+Pull and run the latest image from Docker Hub:
+
+```bash
+docker pull frodehus/sentinel-connector-studio
+docker run -p 8080:8080 frodehus/sentinel-connector-studio
+```
+
+Open `http://localhost:8080` in your browser.
+
+To pin a specific version:
+
+```bash
+docker run -p 8080:8080 frodehus/sentinel-connector-studio:1.0.0
+```
+
+> See all available tags at [hub.docker.com/r/frodehus/sentinel-connector-studio](https://hub.docker.com/r/frodehus/sentinel-connector-studio).
+
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) (v18+)
