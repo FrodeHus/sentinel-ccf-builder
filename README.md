@@ -1,6 +1,6 @@
 # Sentinel Connector Studio
-[![CI](https://github.com/FrodeHus/sentinel-ccf-builder/actions/workflows/ci.yml/badge.svg)](https://github.com/FrodeHus/sentinel-ccf-builder/actions/workflows/ci.yml)
-[![Docker Publish](https://github.com/FrodeHus/sentinel-ccf-builder/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/FrodeHus/sentinel-ccf-builder/actions/workflows/docker-publish.yml)
+[![CI](https://github.com/FrodeHus/sentinel-connector-studio/actions/workflows/ci.yml/badge.svg)](https://github.com/FrodeHus/sentinel-connector-studio/actions/workflows/ci.yml)
+[![Docker Publish](https://github.com/FrodeHus/sentinel-connector-studio/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/FrodeHus/sentinel-connector-studio/actions/workflows/docker-publish.yml)
 
 A client-side web application that guides you through visually building a **Microsoft Sentinel Codeless Connector Framework (CCF) push connector**. The tool produces a deployable ARM template (`mainTemplate.json`) that can be deployed directly to Azure via the portal, CLI, or API.
 

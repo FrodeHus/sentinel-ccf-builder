@@ -14,7 +14,7 @@ If you discover a security vulnerability in this project, please report it respo
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, please use [GitHub's private vulnerability reporting](https://github.com/FrodeHus/sentinel-ccf-builder/security/advisories/new) to submit your report.
+Instead, please use [GitHub's private vulnerability reporting](https://github.com/FrodeHus/sentinel-connector-studio/security/advisories/new) to submit your report.
 
 When reporting, please include:
 

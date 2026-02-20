@@ -401,7 +401,7 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
           </div>
           <div className="flex items-center gap-1">
             <a
-              href="https://github.com/FrodeHus/sentinel-ccf-builder"
+              href="https://github.com/FrodeHus/sentinel-connector-studio"
               target="_blank"
               rel="noopener noreferrer"
               title="View on GitHub"
