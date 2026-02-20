@@ -1,5 +1,7 @@
 import * as React from "react"
+import DOMPurify from "dompurify"
 import { useConnectorConfig } from "@/hooks/useConnectorConfig"
+import { CONFIG } from "@/config"
 import { titleToConnectorId, connectorIdToTableName, tableNameToStreamName } from "@/lib/naming"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -84,7 +86,8 @@ export function StepBasics() {
         <CardHeader>
           <CardTitle>Connector Identity</CardTitle>
           <CardDescription>
-            Define how your connector appears in the Sentinel data connector gallery.
+            Define how your connector appears in the Sentinel data connector
+            gallery.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -94,7 +97,7 @@ export function StepBasics() {
               id="title"
               placeholder='e.g., "Contoso Security Alerts (Push)"'
               value={meta.title}
-              onChange={e => handleTitleChange(e.target.value)}
+              onChange={(e) => handleTitleChange(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
               The display name users see when browsing connectors in Sentinel.
@@ -107,13 +110,14 @@ export function StepBasics() {
               id="connectorId"
               placeholder="e.g., ContosoSecurityAlerts"
               value={meta.connectorId}
-              onChange={e => {
-                setIdManuallyEdited(true)
-                updateMeta({ connectorId: e.target.value })
+              onChange={(e) => {
+                setIdManuallyEdited(true);
+                updateMeta({ connectorId: e.target.value });
               }}
             />
             <p className="text-xs text-muted-foreground">
-              Auto-generated from title. Used as the internal resource name. Must start with a letter, alphanumeric only.
+              Auto-generated from title. Used as the internal resource name.
+              Must start with a letter, alphanumeric only.
             </p>
           </div>
 
@@ -123,7 +127,7 @@ export function StepBasics() {
               id="publisher"
               placeholder="e.g., Contoso Ltd."
               value={meta.publisher}
-              onChange={e => updateMeta({ publisher: e.target.value })}
+              onChange={(e) => updateMeta({ publisher: e.target.value })}
             />
           </div>
 
@@ -134,10 +138,13 @@ export function StepBasics() {
               placeholder="Describe what this connector does and what data it ingests..."
               rows={5}
               value={meta.descriptionMarkdown}
-              onChange={e => updateMeta({ descriptionMarkdown: e.target.value })}
+              onChange={(e) =>
+                updateMeta({ descriptionMarkdown: e.target.value })
+              }
             />
             <p className="text-xs text-muted-foreground">
-              Supports Markdown. Shown on the connector page in Sentinel. Link to your product docs.
+              Supports Markdown. Shown on the connector page in Sentinel. Link
+              to your product docs.
             </p>
           </div>
 
@@ -148,13 +155,18 @@ export function StepBasics() {
               placeholder="Paste SVG markup here..."
               rows={3}
               value={meta.logo}
-              onChange={e => updateMeta({ logo: e.target.value })}
+              onChange={(e) => updateMeta({ logo: e.target.value })}
             />
             {meta.logo && (
               <div className="p-4 border rounded-md bg-muted flex items-center justify-center">
                 <div
                   className="w-16 h-16"
-                  dangerouslySetInnerHTML={{ __html: meta.logo }}
+                  dangerouslySetInnerHTML={{
+                    __html: DOMPurify.sanitize(
+                      meta.logo,
+                      CONFIG.DOMPURIFY_CONFIG as any,
+                    ),
+                  }}
                 />
               </div>
             )}
@@ -170,14 +182,29 @@ export function StepBasics() {
         <CollapsibleContent>
           <Card className="mt-2">
             <CardContent className="pt-4 text-sm text-muted-foreground space-y-2">
-              <p>This step captures the identity and branding of your connector. The information here determines how your connector appears in the Sentinel Data Connector gallery.</p>
-              <p><strong>Title</strong> is the main display name users see. Make it descriptive, e.g., &quot;Contoso Security Alerts (Push)&quot;.</p>
-              <p><strong>Publisher</strong> is shown as the author of the connector.</p>
-              <p><strong>Description</strong> supports Markdown and appears on the connector&apos;s detail page. Include links to your product documentation.</p>
+              <p>
+                This step captures the identity and branding of your connector.
+                The information here determines how your connector appears in
+                the Sentinel Data Connector gallery.
+              </p>
+              <p>
+                <strong>Title</strong> is the main display name users see. Make
+                it descriptive, e.g., &quot;Contoso Security Alerts
+                (Push)&quot;.
+              </p>
+              <p>
+                <strong>Publisher</strong> is shown as the author of the
+                connector.
+              </p>
+              <p>
+                <strong>Description</strong> supports Markdown and appears on
+                the connector&apos;s detail page. Include links to your product
+                documentation.
+              </p>
             </CardContent>
           </Card>
         </CollapsibleContent>
       </Collapsible>
     </div>
-  )
+  );
 }

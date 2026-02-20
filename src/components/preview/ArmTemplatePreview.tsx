@@ -1,5 +1,7 @@
 import * as React from "react"
+import DOMPurify from "dompurify";
 import { useConnectorConfig } from "@/hooks/useConnectorConfig"
+import { CONFIG } from "@/config";
 import { generateTableResource } from "@/lib/arm-resources/table";
 import { generateDcrResource } from "@/lib/arm-resources/dcr";
 import { generateConnectorDefinition } from "@/lib/arm-resources/connector-def";
@@ -10,17 +12,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Copy, Check } from "lucide-react";
 
 function highlightJson(json: string): string {
-  return json.replace(
+  const highlighted = json.replace(
     /("(?:\\.|[^"\\])*")\s*:|("(?:\\.|[^"\\])*")|(\b(?:true|false)\b)|(\bnull\b)|(-?\b\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)/g,
     (match, key, str, bool, nil, num) => {
-      if (key) return `<span class="json-key">${key}</span>:`
-      if (str) return `<span class="json-string">${str}</span>`
-      if (bool) return `<span class="json-bool">${bool}</span>`
-      if (nil) return `<span class="json-null">${nil}</span>`
-      if (num) return `<span class="json-number">${num}</span>`
-      return match
-    }
-  )
+      if (key) return `<span class="json-key">${key}</span>:`;
+      if (str) return `<span class="json-string">${str}</span>`;
+      if (bool) return `<span class="json-bool">${bool}</span>`;
+      if (nil) return `<span class="json-null">${nil}</span>`;
+      if (num) return `<span class="json-number">${num}</span>`;
+      return match;
+    },
+  );
+  // Sanitize the highlighted output to prevent XSS
+  return DOMPurify.sanitize(highlighted, {
+    ALLOWED_TAGS: ["span"],
+    ALLOWED_ATTR: ["class"],
+  });
 }
 
 const FILE_TABS = [
@@ -83,8 +90,9 @@ export function ArmTemplatePreview() {
     try {
       await navigator.clipboard.writeText(content[activeTab]);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
+      setTimeout(() => setCopied(false), CONFIG.COPY_FEEDBACK_DURATION_MS);
+    } catch (error) {
+      console.error("Failed to copy to clipboard:", error);
       // Clipboard API might not be available
     }
   };
