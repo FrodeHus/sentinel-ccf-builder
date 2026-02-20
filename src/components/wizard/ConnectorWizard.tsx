@@ -166,28 +166,33 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
   const [urlDialogOpen, setUrlDialogOpen] = React.useState(false);
   const [projectUrl, setProjectUrl] = React.useState("");
   const [isLoadingUrl, setIsLoadingUrl] = React.useState(false);
+  const [deepLinkUrl, setDeepLinkUrl] = React.useState<string | null>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Auto-load project from URL query parameter (e.g. ?project=https://...)
+  // Show consent dialog when a deep link ?project= param is present
   React.useEffect(() => {
     if (!initialProjectUrl) return;
+    try {
+      // Validate before showing the dialog so we don't prompt for clearly invalid URLs
+      const parsed = new URL(initialProjectUrl);
+      if (!["http:", "https:"].includes(parsed.protocol)) return;
+      setDeepLinkUrl(initialProjectUrl);
+    } catch {
+      // Invalid URL — silently ignore
+    }
+  }, [initialProjectUrl]);
 
-    let cancelled = false;
+  const handleDeepLinkConfirm = React.useCallback(() => {
+    if (!deepLinkUrl) return;
+
     setIsLoadingUrl(true);
-
-    readProjectFromUrl(initialProjectUrl)
+    readProjectFromUrl(deepLinkUrl)
       .then((state) => {
-        if (cancelled) return;
         importAppState(state);
         setCurrentStep(0);
         setVisitedSteps(new Set([0]));
-        // Clean the ?project param from the URL without a navigation
-        const url = new URL(window.location.href);
-        url.searchParams.delete("project");
-        window.history.replaceState({}, "", url.toString());
       })
       .catch((err) => {
-        if (cancelled) return;
         const msg =
           err instanceof Error
             ? err.message
@@ -195,13 +200,22 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
         alert(msg);
       })
       .finally(() => {
-        if (!cancelled) setIsLoadingUrl(false);
+        setIsLoadingUrl(false);
+        setDeepLinkUrl(null);
+        // Clean the ?project param from the URL
+        const url = new URL(window.location.href);
+        url.searchParams.delete("project");
+        window.history.replaceState({}, "", url.toString());
       });
+  }, [deepLinkUrl, importAppState]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [initialProjectUrl, importAppState]);
+  const handleDeepLinkDismiss = React.useCallback(() => {
+    setDeepLinkUrl(null);
+    // Clean the ?project param from the URL
+    const url = new URL(window.location.href);
+    url.searchParams.delete("project");
+    window.history.replaceState({}, "", url.toString());
+  }, []);
 
   // Filter steps based on active connector's kind
   const activeKind = config.meta.connectorKind || "Push";
@@ -610,6 +624,47 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
               onClick={handleLoadFromUrl}
               disabled={isLoadingUrl || !projectUrl.trim()}
             >
+              {isLoadingUrl ? "Loading..." : "Load Project"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deep Link Consent Dialog */}
+      <Dialog
+        open={deepLinkUrl !== null}
+        onOpenChange={(open) => {
+          if (!open) handleDeepLinkDismiss();
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Load External Project</DialogTitle>
+            <DialogDescription>
+              A link is requesting to load a project from an external URL. This
+              will replace any current configuration.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground mb-1">Source</p>
+              <code className="text-xs bg-muted px-2 py-1.5 rounded block break-all select-all">
+                {deepLinkUrl}
+              </code>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Only load projects from sources you trust.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeepLinkDismiss}
+              disabled={isLoadingUrl}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleDeepLinkConfirm} disabled={isLoadingUrl}>
               {isLoadingUrl ? "Loading..." : "Load Project"}
             </Button>
           </DialogFooter>
