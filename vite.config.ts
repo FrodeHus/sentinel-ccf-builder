@@ -19,10 +19,6 @@ const config = defineConfig({
     tanstackStart({ spa: { enabled: true, prerender: { enabled: false } } }),
     viteReact(),
   ],
-  test: {
-    globals: true,
-    environment: "node",
-  },
 });
 
 export default config
