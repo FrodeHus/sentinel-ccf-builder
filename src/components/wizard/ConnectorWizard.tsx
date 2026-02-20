@@ -329,7 +329,7 @@ export function ConnectorWizard() {
         <div className="px-6 py-5 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Sentinel CCF Connector Solution Builder
+              Sentinel Connector Studio
             </h1>
             <p className="text-sm text-muted-foreground mt-1">
               Build Microsoft Sentinel Codeless Connector Framework (CCF)
