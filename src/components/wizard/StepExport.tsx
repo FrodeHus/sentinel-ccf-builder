@@ -1,6 +1,7 @@
 import * as React from "react"
 import { useConnectorConfig } from "@/hooks/useConnectorConfig"
 import { downloadSolutionZip, downloadIndividualFile } from "@/lib/download";
+import { downloadProjectFile, readProjectFile } from "@/lib/persistence";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -16,12 +17,48 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Download, FolderArchive, ChevronDown, HelpCircle } from "lucide-react";
+import {
+  Download,
+  FolderArchive,
+  ChevronDown,
+  HelpCircle,
+  Save,
+  Upload,
+} from "lucide-react";
 
 export function StepExport() {
-  const { config, connectors, activeConnectorIndex, updateSolution } = useConnectorConfig();
+  const {
+    config,
+    connectors,
+    activeConnectorIndex,
+    updateSolution,
+    importAppState,
+  } = useConnectorConfig();
   const { solution } = config;
   const [expanded, setExpanded] = React.useState(false);
+  const [importError, setImportError] = React.useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleLoadProject = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImportError(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Reset the input so the same file can be re-selected
+    e.target.value = "";
+
+    try {
+      const state = await readProjectFile(file);
+      if (!confirm("This will replace your current configuration. Continue?")) {
+        return;
+      }
+      importAppState(state);
+    } catch (err) {
+      setImportError(
+        err instanceof Error ? err.message : "Failed to load project file.",
+      );
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -42,7 +79,8 @@ export function StepExport() {
               onChange={(e) => updateSolution({ name: e.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              Name used for the solution package folder. Defaults to the first connector ID if empty.
+              Name used for the solution package folder. Defaults to the first
+              connector ID if empty.
             </p>
           </div>
 
@@ -164,6 +202,56 @@ export function StepExport() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Project File</CardTitle>
+          <CardDescription>
+            Save or load your editor configuration as a project file. This
+            preserves all settings for later editing.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="outline"
+              className="justify-start"
+              onClick={() =>
+                downloadProjectFile({
+                  solution: config.solution,
+                  connectors,
+                  activeConnectorIndex,
+                })
+              }
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Project
+            </Button>
+            <Button
+              variant="outline"
+              className="justify-start"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Load Project
+            </Button>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json"
+            className="hidden"
+            onChange={handleLoadProject}
+          />
+          {importError && (
+            <p className="text-sm text-destructive">{importError}</p>
+          )}
+          <p className="text-xs text-muted-foreground">
+            The project file (.json) stores your raw editor state. Use the ZIP
+            download below for deployment.
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Download</CardTitle>
           <CardDescription>
             Export your connector files for packaging with the Azure-Sentinel
@@ -172,7 +260,13 @@ export function StepExport() {
         </CardHeader>
         <CardContent className="space-y-3">
           <Button
-            onClick={() => downloadSolutionZip({ solution: config.solution, connectors, activeConnectorIndex })}
+            onClick={() =>
+              downloadSolutionZip({
+                solution: config.solution,
+                connectors,
+                activeConnectorIndex,
+              })
+            }
             className="w-full justify-start"
             size="lg"
           >

@@ -1,9 +1,12 @@
-import type { AppState } from "./schemas"
-import { AppStateSchema } from "./schemas"
+import { saveAs } from "file-saver";
+import type { AppState } from "./schemas";
+import { AppStateSchema } from "./schemas";
 
-const STORAGE_KEY = "sentinel-ccf-builder-config"
+const MAX_IMPORT_SIZE = 1_048_576; // 1 MB
 
-let debounceTimer: ReturnType<typeof setTimeout> | null = null
+const STORAGE_KEY = "sentinel-ccf-builder-config";
+
+let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function saveConfig(state: AppState): void {
   if (debounceTimer) clearTimeout(debounceTimer);
@@ -58,13 +61,47 @@ export function clearConfig(): void {
 }
 
 export function exportConfig(state: AppState): string {
-  return JSON.stringify(state, null, 2)
+  return JSON.stringify(state, null, 2);
 }
 
 export function importConfig(json: string): AppState | null {
   try {
-    return AppStateSchema.parse(JSON.parse(json))
+    return AppStateSchema.parse(JSON.parse(json));
   } catch {
-    return null
+    return null;
+  }
+}
+
+export function downloadProjectFile(state: AppState): void {
+  const name =
+    state.solution.name || state.connectors[0]?.meta.connectorId || "project";
+  const blob = new Blob([JSON.stringify(state, null, 2)], {
+    type: "application/json",
+  });
+  saveAs(blob, `${name}-project.json`);
+}
+
+export async function readProjectFile(file: File): Promise<AppState> {
+  if (file.size > MAX_IMPORT_SIZE) {
+    throw new Error(
+      `File is too large (${(file.size / 1024).toFixed(0)} KB). Maximum allowed size is 1 MB.`,
+    );
+  }
+
+  const text = await file.text();
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("The file does not contain valid JSON.");
+  }
+
+  try {
+    return AppStateSchema.parse(parsed);
+  } catch {
+    throw new Error(
+      "The file is not a valid project file. It does not match the expected format.",
+    );
   }
 }
