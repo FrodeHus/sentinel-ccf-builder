@@ -23,6 +23,31 @@ The UX is designed for users who may have no prior experience with ARM templates
 - **Session persistence** — your work is saved to `localStorage` so you can resume across sessions
 - **Save / Load projects** — export your project as a `.json` file, reload it later, or load from a URL
 - **Multiple export options** — download the ARM template, a full solution package (ZIP), or individual resource files
+- **Deep link support** — link directly to a project via URL query parameter (`?project=<url>`)
+
+## Share Your Connector
+
+You can add a badge to your repository's README that opens your connector project directly in Sentinel Connector Studio. When someone clicks the badge, the app loads and automatically imports the project file from the URL.
+
+### Badge
+
+[![Open in Sentinel Connector Studio](https://connector-studio.reothor.no/badge.svg)](https://connector-studio.reothor.no/)
+
+### Usage
+
+Add the following markdown to your README, replacing `<URL_TO_PROJECT_JSON>` with a direct link to your exported `.json` project file (e.g. a raw GitHub URL):
+
+```markdown
+[![Open in Sentinel Connector Studio](https://connector-studio.reothor.no/badge.svg)](https://connector-studio.reothor.no/?project=<URL_TO_PROJECT_JSON>)
+```
+
+**Example** using a raw GitHub URL:
+
+```markdown
+[![Open in Sentinel Connector Studio](https://connector-studio.reothor.no/badge.svg)](https://connector-studio.reothor.no/?project=https://raw.githubusercontent.com/myorg/myrepo/main/connector.json)
+```
+
+> **Note:** The project URL must serve valid JSON with the correct CORS headers. Raw GitHub URLs (`raw.githubusercontent.com`) work out of the box.
 
 ## Wizard Steps
 

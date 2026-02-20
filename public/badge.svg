@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="260" height="28" role="img" aria-label="Open in: Sentinel Connector Studio">
+  <title>Open in: Sentinel Connector Studio</title>
+  <g shape-rendering="crispEdges">
+    <rect width="62" height="28" fill="#0078d4"/>
+    <rect x="62" width="198" height="28" fill="#1a1a2e"/>
+  </g>
+  <g fill="#fff" text-anchor="middle" font-family="Segoe UI,Helvetica,Arial,sans-serif" font-size="12">
+    <text x="31" y="18" font-weight="600">Open in</text>
+    <text x="161" y="18">Sentinel Connector Studio</text>
+  </g>
+</svg>

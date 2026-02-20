@@ -3,9 +3,19 @@ import { createFileRoute } from '@tanstack/react-router'
 import { ConnectorConfigProvider } from '@/hooks/useConnectorConfig'
 import { ThemeProvider } from '@/hooks/useTheme'
 
-export const Route = createFileRoute('/')({ component: App })
+interface ProjectSearchParams {
+  project?: string;
+}
+
+export const Route = createFileRoute("/")({
+  component: App,
+  validateSearch: (search: Record<string, unknown>): ProjectSearchParams => ({
+    project: typeof search.project === "string" ? search.project : undefined,
+  }),
+});
 
 function App() {
+  const { project } = Route.useSearch();
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -23,7 +33,7 @@ function App() {
     );
   }
 
-  return <ClientWizard />
+  return <ClientWizard projectUrl={project} />;
 }
 
 // Lazy load the wizard to avoid SSR issues with CodeMirror, localStorage, etc.
@@ -31,7 +41,7 @@ const LazyConnectorWizard = React.lazy(() =>
   import('@/components/wizard/ConnectorWizard').then(m => ({ default: m.ConnectorWizard }))
 )
 
-function ClientWizard() {
+function ClientWizard({ projectUrl }: { projectUrl?: string }) {
   return (
     <ThemeProvider>
       <ConnectorConfigProvider>
@@ -42,9 +52,9 @@ function ClientWizard() {
             </div>
           }
         >
-          <LazyConnectorWizard />
+          <LazyConnectorWizard initialProjectUrl={projectUrl} />
         </React.Suspense>
       </ConnectorConfigProvider>
     </ThemeProvider>
-  )
+  );
 }
