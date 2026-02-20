@@ -1,0 +1,10 @@
+# Default owners for everything in the repo
+* @FrodeHus
+
+# GitHub Actions workflows
+.github/ @FrodeHus
+
+# Docker configuration
+Dockerfile @FrodeHus
+docker-compose.yml @FrodeHus
+nginx.conf @FrodeHus
