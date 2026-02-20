@@ -14,6 +14,7 @@ interface ConnectorConfigContextValue {
   updatePollerConfig: (updater: (prev: PollerConfig) => PollerConfig) => void
   updateSolution: (solution: Partial<ConnectorConfig["solution"]>) => void
   reset: () => void
+  importAppState: (state: AppState) => void
   hasSavedConfig: boolean
   dismissSavedConfig: () => void
   resumeSavedConfig: () => void
@@ -186,6 +187,11 @@ export function ConnectorConfigProvider({ children }: { children: React.ReactNod
     setHasSavedConfig(false)
   }, [])
 
+  const importAppState = React.useCallback((state: AppState) => {
+    setAppState(state)
+    setHasSavedConfig(false)
+  }, [])
+
   const dismissSavedConfig = React.useCallback(() => {
     setHasSavedConfig(false)
   }, [])
@@ -209,6 +215,7 @@ export function ConnectorConfigProvider({ children }: { children: React.ReactNod
       updatePollerConfig,
       updateSolution,
       reset,
+      importAppState,
       hasSavedConfig,
       dismissSavedConfig,
       resumeSavedConfig,
@@ -228,6 +235,7 @@ export function ConnectorConfigProvider({ children }: { children: React.ReactNod
       updatePollerConfig,
       updateSolution,
       reset,
+      importAppState,
       hasSavedConfig,
       dismissSavedConfig,
       resumeSavedConfig,

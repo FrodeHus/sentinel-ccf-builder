@@ -16,15 +16,49 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Download, FolderArchive, ChevronDown, HelpCircle } from "lucide-react";
+import {
+  Download,
+  FolderArchive,
+  ChevronDown,
+  HelpCircle,
+} from "lucide-react";
 
 export function StepExport() {
-  const { config, connectors, activeConnectorIndex, updateSolution } = useConnectorConfig();
+  const {
+    config,
+    connectors,
+    activeConnectorIndex,
+    updateSolution,
+  } = useConnectorConfig();
   const { solution } = config;
   const [expanded, setExpanded] = React.useState(false);
 
   return (
     <div className="space-y-6">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
+        <p className="text-sm text-muted-foreground">
+          <strong>Tip:</strong> Use the <strong>File menu</strong> (
+          <span className="inline-flex items-center gap-1">
+            <svg
+              className="inline w-3.5 h-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </span>
+          ) in the header to save or load your project configuration at any
+          time. Keyboard shortcuts: <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">⌘S</kbd> to
+          save, <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded">⌘O</kbd> to open.
+        </p>
+      </div>
+
       <Card>
         <CardHeader>
           <CardTitle>Solution Metadata</CardTitle>
@@ -42,7 +76,8 @@ export function StepExport() {
               onChange={(e) => updateSolution({ name: e.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              Name used for the solution package folder. Defaults to the first connector ID if empty.
+              Name used for the solution package folder. Defaults to the first
+              connector ID if empty.
             </p>
           </div>
 
@@ -172,7 +207,13 @@ export function StepExport() {
         </CardHeader>
         <CardContent className="space-y-3">
           <Button
-            onClick={() => downloadSolutionZip({ solution: config.solution, connectors, activeConnectorIndex })}
+            onClick={() =>
+              downloadSolutionZip({
+                solution: config.solution,
+                connectors,
+                activeConnectorIndex,
+              })
+            }
             className="w-full justify-start"
             size="lg"
           >
