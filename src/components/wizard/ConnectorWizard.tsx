@@ -136,59 +136,108 @@ const ALL_STEPS: StepDef[] = [
   },
 ]
 
-export function ConnectorWizard() {
-  const hookValue = useConnectorConfig()
+interface ConnectorWizardProps {
+  initialProjectUrl?: string;
+}
+
+export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
+  const hookValue = useConnectorConfig();
   const {
-    config, updateSchema, updateDataFlow, updatePollerConfig,
-    hasSavedConfig, resumeSavedConfig, dismissSavedConfig, reset,
-    connectors, activeConnectorIndex, addConnector, removeConnector, setActiveConnector,
+    config,
+    updateSchema,
+    updateDataFlow,
+    updatePollerConfig,
+    hasSavedConfig,
+    resumeSavedConfig,
+    dismissSavedConfig,
+    reset,
+    connectors,
+    activeConnectorIndex,
+    addConnector,
+    removeConnector,
+    setActiveConnector,
     importAppState,
-  } = hookValue
-  const { theme, toggleTheme } = useTheme()
-  const [currentStep, setCurrentStep] = React.useState(0)
-  const [visitedSteps, setVisitedSteps] = React.useState(new Set([0]))
-  const [showPreview, setShowPreview] = React.useState(true)
+  } = hookValue;
+  const { theme, toggleTheme } = useTheme();
+  const [currentStep, setCurrentStep] = React.useState(0);
+  const [visitedSteps, setVisitedSteps] = React.useState(new Set([0]));
+  const [showPreview, setShowPreview] = React.useState(true);
   const [mobilePreview, setMobilePreview] = React.useState(false);
   const [urlDialogOpen, setUrlDialogOpen] = React.useState(false);
   const [projectUrl, setProjectUrl] = React.useState("");
   const [isLoadingUrl, setIsLoadingUrl] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Auto-load project from URL query parameter (e.g. ?project=https://...)
+  React.useEffect(() => {
+    if (!initialProjectUrl) return;
+
+    let cancelled = false;
+    setIsLoadingUrl(true);
+
+    readProjectFromUrl(initialProjectUrl)
+      .then((state) => {
+        if (cancelled) return;
+        importAppState(state);
+        setCurrentStep(0);
+        setVisitedSteps(new Set([0]));
+        // Clean the ?project param from the URL without a navigation
+        const url = new URL(window.location.href);
+        url.searchParams.delete("project");
+        window.history.replaceState({}, "", url.toString());
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Failed to load project from URL.";
+        alert(msg);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoadingUrl(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [initialProjectUrl, importAppState]);
 
   // Filter steps based on active connector's kind
-  const activeKind = config.meta.connectorKind || "Push"
+  const activeKind = config.meta.connectorKind || "Push";
   const visibleSteps = React.useMemo(
     () => ALL_STEPS.filter((s) => !s.kinds || s.kinds.includes(activeKind)),
     [activeKind],
-  )
+  );
 
   // Clamp currentStep if it exceeds visible steps after kind change
   React.useEffect(() => {
     if (currentStep >= visibleSteps.length) {
-      setCurrentStep(visibleSteps.length - 1)
+      setCurrentStep(visibleSteps.length - 1);
     }
-  }, [visibleSteps.length, currentStep])
+  }, [visibleSteps.length, currentStep]);
 
   // Auto-init pollerConfig when kind switches to RestApiPoller
   React.useEffect(() => {
     if (config.meta.connectorKind === "RestApiPoller" && !config.pollerConfig) {
-      updatePollerConfig(() => PollerConfigSchema.parse({}))
+      updatePollerConfig(() => PollerConfigSchema.parse({}));
     }
-  }, [config.meta.connectorKind, config.pollerConfig, updatePollerConfig])
+  }, [config.meta.connectorKind, config.pollerConfig, updatePollerConfig]);
 
   // Auto-derive table name and stream name
   React.useEffect(() => {
     if (config.meta.connectorId && !config.schema.tableName) {
-      const tableName = connectorIdToTableName(config.meta.connectorId)
-      updateSchema({ tableName })
+      const tableName = connectorIdToTableName(config.meta.connectorId);
+      updateSchema({ tableName });
     }
-  }, [config.meta.connectorId, config.schema.tableName, updateSchema])
+  }, [config.meta.connectorId, config.schema.tableName, updateSchema]);
 
   React.useEffect(() => {
     if (config.schema.tableName && !config.dataFlow.streamName) {
-      const streamName = tableNameToStreamName(config.schema.tableName)
-      updateDataFlow({ streamName })
+      const streamName = tableNameToStreamName(config.schema.tableName);
+      updateDataFlow({ streamName });
     }
-  }, [config.schema.tableName, config.dataFlow.streamName, updateDataFlow])
+  }, [config.schema.tableName, config.dataFlow.streamName, updateDataFlow]);
 
   // File operations handlers
   const handleSaveProject = React.useCallback(() => {
@@ -272,26 +321,26 @@ export function ConnectorWizard() {
     label: step.label,
     isValid: step.isValid(connectors, config),
     isVisited: visitedSteps.has(i),
-  }))
+  }));
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) {
-      const nextStep = currentStep + 1
-      setCurrentStep(nextStep)
-      setVisitedSteps(prev => new Set(prev).add(nextStep))
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      setVisitedSteps((prev) => new Set(prev).add(nextStep));
     }
-  }
+  };
 
   const handleBack = () => {
     if (currentStep > 0) {
-      setCurrentStep(currentStep - 1)
+      setCurrentStep(currentStep - 1);
     }
-  }
+  };
 
   const handleStepClick = (index: number) => {
-    setCurrentStep(index)
-    setVisitedSteps(prev => new Set(prev).add(index))
-  }
+    setCurrentStep(index);
+    setVisitedSteps((prev) => new Set(prev).add(index));
+  };
 
   const handleReset = () => {
     if (confirm("Reset all configuration and start fresh?")) {
@@ -302,8 +351,8 @@ export function ConnectorWizard() {
   };
 
   const currentStepIsValid = steps[currentStep]?.isValid ?? true;
-  const ActiveStepComponent = visibleSteps[currentStep]?.component
-  const currentStepDef = visibleSteps[currentStep]
+  const ActiveStepComponent = visibleSteps[currentStep]?.component;
+  const currentStepDef = visibleSteps[currentStep];
 
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-background via-background to-primary/5">
