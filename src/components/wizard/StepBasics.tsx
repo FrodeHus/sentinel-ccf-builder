@@ -1,5 +1,7 @@
 import * as React from "react"
+import DOMPurify from "dompurify"
 import { useConnectorConfig } from "@/hooks/useConnectorConfig"
+import { CONFIG } from "@/config"
 import { titleToConnectorId, connectorIdToTableName, tableNameToStreamName } from "@/lib/naming"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -154,7 +156,9 @@ export function StepBasics() {
               <div className="p-4 border rounded-md bg-muted flex items-center justify-center">
                 <div
                   className="w-16 h-16"
-                  dangerouslySetInnerHTML={{ __html: meta.logo }}
+                  dangerouslySetInnerHTML={{ 
+                    __html: DOMPurify.sanitize(meta.logo, CONFIG.DOMPURIFY_CONFIG) 
+                  }}
                 />
               </div>
             )}

@@ -1,10 +1,7 @@
 import { saveAs } from "file-saver";
 import type { AppState } from "./schemas";
 import { AppStateSchema } from "./schemas";
-
-const MAX_IMPORT_SIZE = 1_048_576; // 1 MB
-
-const STORAGE_KEY = "sentinel-ccf-builder-config";
+import { CONFIG, validateProjectFile, formatFileSize } from "@/config";
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -12,17 +9,18 @@ export function saveConfig(state: AppState): void {
   if (debounceTimer) clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch {
-      // localStorage may be unavailable (private browsing) or full — config is still
-      // held in memory for the current session, so the user can still export.
+      localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      // localStorage may be unavailable (private browsing) or full
+      console.warn('Failed to auto-save to localStorage:', error);
+      // Config is still held in memory for the current session, so the user can still export
     }
-  }, 500);
+  }, CONFIG.AUTO_SAVE_DEBOUNCE_MS);
 }
 
 export function loadConfig(): AppState | null {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(CONFIG.STORAGE_KEY);
     if (!stored) return null;
     const parsed = JSON.parse(stored);
 
@@ -46,17 +44,19 @@ export function loadConfig(): AppState | null {
 
     // Parse through schema to fill new field defaults
     return AppStateSchema.parse(parsed);
-  } catch {
-    // JSON.parse throws if the stored value is corrupt; treat as no saved config.
+  } catch (error) {
+    console.warn('Failed to load config from localStorage:', error);
+    // JSON.parse or schema validation failed; treat as no saved config
     return null;
   }
 }
 
 export function clearConfig(): void {
   try {
-    localStorage.removeItem(STORAGE_KEY);
-  } catch {
-    // localStorage unavailable in this context — no-op, nothing to clear.
+    localStorage.removeItem(CONFIG.STORAGE_KEY);
+  } catch (error) {
+    console.warn('Failed to clear config from localStorage:', error);
+    // localStorage unavailable in this context — no-op, nothing to clear
   }
 }
 
@@ -67,7 +67,8 @@ export function exportConfig(state: AppState): string {
 export function importConfig(json: string): AppState | null {
   try {
     return AppStateSchema.parse(JSON.parse(json));
-  } catch {
+  } catch (error) {
+    console.error('Failed to import config:', error);
     return null;
   }
 }
@@ -82,10 +83,10 @@ export function downloadProjectFile(state: AppState): void {
 }
 
 export async function readProjectFile(file: File): Promise<AppState> {
-  if (file.size > MAX_IMPORT_SIZE) {
-    throw new Error(
-      `File is too large (${(file.size / 1024).toFixed(0)} KB). Maximum allowed size is 1 MB.`,
-    );
+  // Validate file before reading
+  const validation = validateProjectFile(file);
+  if (!validation.valid) {
+    throw new Error(validation.error!);
   }
 
   const text = await file.text();
@@ -93,15 +94,17 @@ export async function readProjectFile(file: File): Promise<AppState> {
   let parsed: unknown;
   try {
     parsed = JSON.parse(text);
-  } catch {
-    throw new Error("The file does not contain valid JSON.");
+  } catch (error) {
+    throw new Error(
+      `The file does not contain valid JSON: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 
   try {
     return AppStateSchema.parse(parsed);
-  } catch {
+  } catch (error) {
     throw new Error(
-      "The file is not a valid project file. It does not match the expected format.",
+      `The file is not a valid project file. It does not match the expected format: ${error instanceof Error ? error.message : 'Unknown error'}`,
     );
   }
 }

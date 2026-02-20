@@ -1,4 +1,5 @@
 import * as React from "react"
+import { CONFIG } from "@/config"
 
 type Theme = "light" | "dark"
 
@@ -17,9 +18,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   React.useEffect(() => {
     // Load theme from localStorage on mount
-    const stored = localStorage.getItem("theme") as Theme | null
-    if (stored) {
-      setTheme(stored)
+    try {
+      const stored = localStorage.getItem(CONFIG.THEME_STORAGE_KEY) as Theme | null
+      if (stored) {
+        setTheme(stored)
+      }
+    } catch (error) {
+      console.warn('Failed to load theme from localStorage:', error)
     }
   }, [])
 
@@ -32,7 +37,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       root.classList.remove("dark")
     }
     // Save to localStorage
-    localStorage.setItem("theme", theme)
+    try {
+      localStorage.setItem(CONFIG.THEME_STORAGE_KEY, theme)
+    } catch (error) {
+      console.warn('Failed to save theme to localStorage:', error)
+    }
   }, [theme])
 
   const toggleTheme = React.useCallback(() => {

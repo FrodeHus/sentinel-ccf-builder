@@ -189,10 +189,10 @@ export function ConnectorWizard() {
       setCurrentStep(0)
       setVisitedSteps(new Set([0]))
     } catch (err) {
-      setImportError(
-        err instanceof Error ? err.message : "Failed to load project file."
-      )
-      alert(importError || "Failed to load project file.")
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to load project file.";
+      setImportError(errorMessage);
+      alert(errorMessage);
     }
   }
 
