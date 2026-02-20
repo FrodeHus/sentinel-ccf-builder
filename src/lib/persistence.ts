@@ -1,7 +1,7 @@
 import { saveAs } from "file-saver";
 import type { AppState } from "./schemas";
 import { AppStateSchema } from "./schemas";
-import { CONFIG, validateProjectFile, formatFileSize } from "@/config";
+import { CONFIG, validateProjectFile } from "@/config";
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 

@@ -123,8 +123,7 @@ export function ConnectorWizard() {
   const [currentStep, setCurrentStep] = React.useState(0)
   const [visitedSteps, setVisitedSteps] = React.useState(new Set([0]))
   const [showPreview, setShowPreview] = React.useState(true)
-  const [mobilePreview, setMobilePreview] = React.useState(false)
-  const [importError, setImportError] = React.useState<string | null>(null)
+  const [mobilePreview, setMobilePreview] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
   // Filter steps based on active connector's kind
@@ -173,28 +172,26 @@ export function ConnectorWizard() {
   }
 
   const handleLoadProject = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    setImportError(null)
-    const file = e.target.files?.[0]
-    if (!file) return
+    const file = e.target.files?.[0];
+    if (!file) return;
 
     // Reset the input so the same file can be re-selected
-    e.target.value = ""
+    e.target.value = "";
 
     try {
-      const state = await readProjectFile(file)
+      const state = await readProjectFile(file);
       if (!confirm("This will replace your current configuration. Continue?")) {
-        return
+        return;
       }
-      importAppState(state)
-      setCurrentStep(0)
-      setVisitedSteps(new Set([0]))
+      importAppState(state);
+      setCurrentStep(0);
+      setVisitedSteps(new Set([0]));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load project file.";
-      setImportError(errorMessage);
       alert(errorMessage);
     }
-  }
+  };
 
   // Keyboard shortcuts
   React.useEffect(() => {
