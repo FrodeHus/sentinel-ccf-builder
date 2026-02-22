@@ -110,7 +110,7 @@ az deployment group create \\
 }
 
 function NextStepsCard({ usedPackager }: { usedPackager: boolean }) {
-  const stepOffset = usedPackager ? 0 : 3;
+  const stepOffset = usedPackager ? 1 : 3;
 
   return (
     <>
@@ -150,8 +150,7 @@ function NextStepsCard({ usedPackager }: { usedPackager: boolean }) {
                 </pre>
                 <p className="mt-1">
                   Update <code>BasePath</code> in{" "}
-                  <code>Data/Solution_*.json</code> to point to your local
-                  path.
+                  <code>Data/Solution_*.json</code> to point to your local path.
                 </p>
               </div>
 
@@ -185,25 +184,17 @@ function NextStepsCard({ usedPackager }: { usedPackager: boolean }) {
 
           <div>
             <h4 className="font-medium text-foreground mb-2">
-              {stepOffset + 1 + (usedPackager ? 0 : 0)}. Deploy to Azure
+              {stepOffset + 1}. Deploy to Azure
             </h4>
-            <DeploymentSteps
-              templatePath={
-                usedPackager
-                  ? "Package/mainTemplate.json"
-                  : "Package/mainTemplate.json"
-              }
-            />
+            <DeploymentSteps templatePath="Package/mainTemplate.json" />
           </div>
 
           <div>
             <h4 className="font-medium text-foreground mb-2">
-              {stepOffset + 2 + (usedPackager ? 0 : 0)}. Enable the connector in Sentinel
+              {stepOffset + 2}. Enable the connector in Sentinel
             </h4>
             <ul className="list-disc list-inside space-y-1">
-              <li>
-                Find your connector in Sentinel Data Connectors gallery
-              </li>
+              <li>Find your connector in Sentinel Data Connectors gallery</li>
               <li>
                 Click &quot;Deploy&quot; to provision the push endpoint and
                 Entra app
@@ -229,8 +220,7 @@ function NextStepsCard({ usedPackager }: { usedPackager: boolean }) {
           <Card className="mt-2">
             <CardContent className="pt-4 text-sm text-muted-foreground space-y-2">
               <p>
-                This final step packages your connector for deployment to
-                Azure.
+                This final step packages your connector for deployment to Azure.
               </p>
               {usedPackager ? (
                 <p>
@@ -246,9 +236,8 @@ function NextStepsCard({ usedPackager }: { usedPackager: boolean }) {
                   <p>
                     The <strong>solution package (ZIP)</strong> contains the
                     individual resource files (<code>table.json</code>,{" "}
-                    <code>DCR.json</code>,{" "}
-                    <code>connectorDefinition.json</code>,{" "}
-                    <code>dataConnector.json</code>) and solution metadata
+                    <code>DCR.json</code>, <code>connectorDefinition.json</code>
+                    , <code>dataConnector.json</code>) and solution metadata
                     needed by the Azure-Sentinel packaging tool.
                   </p>
                   <p>
