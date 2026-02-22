@@ -61,7 +61,10 @@ function DeploymentSteps({ templatePath }: { templatePath: string }) {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="portal" className="space-y-3 text-sm text-muted-foreground">
+      <TabsContent
+        value="portal"
+        className="space-y-3 text-sm text-muted-foreground"
+      >
         <ol className="list-decimal list-inside space-y-1">
           <li>
             Navigate to{" "}
@@ -83,13 +86,16 @@ function DeploymentSteps({ templatePath }: { templatePath: string }) {
         </ol>
       </TabsContent>
 
-      <TabsContent value="cli" className="space-y-3 text-sm text-muted-foreground">
+      <TabsContent
+        value="cli"
+        className="space-y-3 text-sm text-muted-foreground"
+      >
         <p>
           Deploy using the Azure CLI. Make sure you are logged in with{" "}
           <code>az login</code> first.
         </p>
         <pre className="bg-muted p-3 rounded-md text-xs font-mono overflow-x-auto whitespace-pre">
-{`# Create or use an existing resource group
+          {`# Create or use an existing resource group
 az group create \\
   --name <RESOURCE_GROUP> \\
   --location <LOCATION>
@@ -97,12 +103,12 @@ az group create \\
 # Deploy the template
 az deployment group create \\
   --resource-group <RESOURCE_GROUP> \\
-  --template-file ${templatePath}`}
+  --template-file ${templatePath} \\
+  --parameters workspace=<WORKSPACE_NAME>`}
         </pre>
         <p>
-          You will be prompted interactively for any required parameters
-          (workspace name, etc.). To supply them on the command line, add{" "}
-          <code>--parameters workspaceName=&lt;NAME&gt;</code>.
+          The <code>workspace</code> parameter is required. Supply it using the{" "}
+          <code>--parameters</code> option as shown above.
         </p>
       </TabsContent>
     </Tabs>

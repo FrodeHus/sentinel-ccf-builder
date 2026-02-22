@@ -107,10 +107,11 @@ az group create \
 
 az deployment group create \
   --resource-group <RESOURCE_GROUP> \
-  --template-file Package/mainTemplate.json
+  --template-file Package/mainTemplate.json \
+  --parameters workspace=<WORKSPACE_NAME>
 ```
 
-Add `--parameters workspaceName=<NAME>` to supply parameters on the command line instead of being prompted interactively.
+The `workspace` parameter is required and must be supplied using the `--parameters` option as shown above.
 
 ## Getting Started
 
