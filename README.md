@@ -23,6 +23,7 @@ The UX is designed for users who may have no prior experience with ARM templates
 - **Session persistence** — your work is saved to `localStorage` so you can resume across sessions
 - **Save / Load projects** — export your project as a `.json` file, reload it later, or load from a URL
 - **Multiple export options** — download the ARM template, a full solution package (ZIP), or individual resource files
+- **Packager sidecar** — optional Docker container that runs `createSolutionV3.ps1` automatically to produce a deployable ARM template
 - **Deep link support** — link directly to a project via URL query parameter (`?project=<url>`)
 
 ## Share Your Connector
@@ -56,6 +57,60 @@ Add the following markdown to your README, replacing `<URL_TO_PROJECT_JSON>` wit
 3. **Data Collection Rule** — Configure the data flow, stream name, and KQL transform
 4. **Connector UI** — Set up the Sentinel connector page: graph queries, sample queries, permissions, and instruction steps
 5. **Export** — Finalize solution metadata and download the ARM template or solution package
+
+## Packager Sidecar
+
+The project includes an optional **packager sidecar** — a Docker container that runs the official Azure-Sentinel `createSolutionV3.ps1` script automatically. When the packager is running, the Export step offers a **Build Deployable Template** button that produces a ready-to-deploy `mainTemplate.json` without any local tooling.
+
+### How it works
+
+1. The app sends your solution ZIP to the packager sidecar (port 8081)
+2. The sidecar runs `createSolutionV3.ps1` inside a PowerShell container
+3. You get back a `deployable-template.zip` containing the generated `Package/mainTemplate.json`
+
+### Running the packager
+
+Start both the app and the packager together:
+
+```bash
+docker compose up
+```
+
+Or start the packager alongside a local dev server:
+
+```bash
+docker compose up packager
+pnpm dev
+```
+
+The Export step shows a **Packager Online** / **Packager Offline** badge so you always know if the sidecar is reachable. When offline, you can still download the raw solution package and run `createSolutionV3.ps1` manually.
+
+### Deploying the generated template
+
+After building or packaging your template, the Next Steps section provides both a **Portal** and **CLI** deployment guide.
+
+**Azure Portal:**
+1. Navigate to [Deploy a custom template](https://portal.azure.com/#create/Microsoft.Template)
+2. Click "Build your own template in the editor"
+3. Upload `Package/mainTemplate.json`
+4. Select your subscription, resource group, and workspace
+5. Review and create
+
+**Azure CLI:**
+
+```bash
+az login
+
+az group create \
+  --name <RESOURCE_GROUP> \
+  --location <LOCATION>
+
+az deployment group create \
+  --resource-group <RESOURCE_GROUP> \
+  --template-file Package/mainTemplate.json
+```
+
+Add `--parameters workspaceName=<NAME>` to supply parameters on the command line instead of being prompted interactively.
 
 ## Getting Started
 

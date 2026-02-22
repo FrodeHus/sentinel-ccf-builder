@@ -20,7 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_NAME: frodehus/sentinel-connector-studio
+  STUDIO_IMAGE: frodehus/sentinel-connector-studio
+  PACKAGER_IMAGE: frodehus/sentinel-connector-studio-packager
 
 jobs:
   test:
@@ -50,6 +51,17 @@ jobs:
   docker:
     needs: test
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - name: studio
+            image_env: STUDIO_IMAGE
+            context: .
+            dockerfile: Dockerfile
+          - name: packager
+            image_env: PACKAGER_IMAGE
+            context: ./packager
+            dockerfile: ./packager/Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -62,7 +74,7 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: |
-            docker.io/${{ env.IMAGE_NAME }}
+            docker.io/${{ env[matrix.image_env] }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
@@ -80,24 +92,26 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
           platforms: linux/amd64,linux/arm64
 
       - name: Scan image for vulnerabilities
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: docker.io/${{ env.IMAGE_NAME }}:latest
+          image-ref: docker.io/${{ env[matrix.image_env] }}:latest
           severity: CRITICAL,HIGH
           format: sarif
-          output: trivy-results.sarif
+          output: trivy-results-${{ matrix.name }}.sarif
 
       - name: Upload Trivy scan results
         uses: github/codeql-action/upload-sarif@v4
-        if: always() && hashFiles('trivy-results.sarif') != ''
+        if: always() && hashFiles(format('trivy-results-{0}.sarif', matrix.name)) != ''
         with:
-          sarif_file: trivy-results.sarif
+          sarif_file: trivy-results-${{ matrix.name }}.sarif
+          category: trivy-${{ matrix.name }}
