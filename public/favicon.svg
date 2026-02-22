@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#c026d3"/>
+    </linearGradient>
+  </defs>
+  <!-- Shield shape -->
+  <path d="M16 2 L28 7 V15C28 22.5 22.5 28.5 16 30 9.5 28.5 4 22.5 4 15V7Z" fill="url(#g)"/>
+  <!-- Connector/plug symbol -->
+  <rect x="12" y="9" width="3" height="7" rx="1" fill="#fff"/>
+  <rect x="17" y="9" width="3" height="7" rx="1" fill="#fff"/>
+  <rect x="10.5" y="15" width="11" height="3" rx="1" fill="#fff"/>
+  <rect x="14" y="18" width="4" height="4" rx="1" fill="#fff"/>
+</svg>
