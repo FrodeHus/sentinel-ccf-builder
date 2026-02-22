@@ -153,6 +153,15 @@ export interface JobStatusResponse {
   error?: string;
 }
 
+export async function checkPackagerHealth(): Promise<boolean> {
+  try {
+    const res = await fetch(`${PACKAGER_URL}/health`, { signal: AbortSignal.timeout(3000) });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function submitPackagingJob(blob: Blob): Promise<PackagingJob> {
   const formData = new FormData();
   formData.append("file", blob, "solution.zip");
