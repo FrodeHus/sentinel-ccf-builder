@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useConnectorConfig } from "@/hooks/useConnectorConfig"
 import { useTheme } from "@/hooks/useTheme"
-import { useTutorial } from "@/hooks/useTutorial"
+import { useTutorial, getTourDef } from "@/hooks/useTutorial"
 import { PollerConfigSchema } from "@/lib/schemas"
 import { Stepper, type StepInfo } from "./Stepper"
 import { ConnectorSidebar } from "./ConnectorSidebar"
@@ -40,13 +40,6 @@ import { ALL_STEPS } from "./step-definitions";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
 import type { NavigateToStepFn } from "@/lib/tutorial/tour-engine";
 import type { TourId } from "@/lib/tutorial/types";
-import { pushTour } from "@/lib/tutorial/push-tour";
-import { pollerTour } from "@/lib/tutorial/poller-tour";
-
-const tourDefs: Record<TourId, { connectorKind: "Push" | "RestApiPoller" }> = {
-  push: pushTour,
-  poller: pollerTour,
-};
 
 interface ConnectorWizardProps {
   initialProjectUrl?: string;
@@ -86,14 +79,17 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
   const [visitedStepIds, setVisitedStepIds] = React.useState<Set<string>>(new Set());
   const [showPreview, setShowPreview] = React.useState(true);
   const [mobilePreview, setMobilePreview] = React.useState(false);
+
+  const resetWizardNav = React.useCallback(() => {
+    setMode("connector");
+    setCurrentStepByMode({ connector: 0, solution: 0 });
+    setVisitedStepIds(new Set());
+  }, []);
+
   const { setConfirmDialog, openUrlDialog, fileInputRef, dialogs } = useWizardDialogs({
     initialProjectUrl,
     importAppState,
-    onProjectLoaded: () => {
-      setMode("connector");
-      setCurrentStepByMode({ connector: 0, solution: 0 });
-      setVisitedStepIds(new Set());
-    },
+    onProjectLoaded: resetWizardNav,
   });
 
   // Filter steps based on active connector's kind and mode
@@ -219,29 +215,33 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
     (tourId: TourId) => {
       reset();
       // Set the connector kind to match the tour so the correct wizard steps are visible
-      const tour = tourDefs[tourId];
-      if (tour) {
-        updateMeta({ connectorKind: tour.connectorKind });
-      }
-      setMode("connector");
-      setCurrentStepByMode({ connector: 0, solution: 0 });
-      setVisitedStepIds(new Set());
+      const tour = getTourDef(tourId);
+      updateMeta({ connectorKind: tour.connectorKind });
+      resetWizardNav();
       startTour(tourId);
     },
-    [reset, updateMeta, startTour],
+    [reset, updateMeta, resetWizardNav, startTour],
   );
+
+  // Use a ref to check dirty state without making the callback depend on every config change
+  const configRef = React.useRef(config);
+  configRef.current = config;
+  const contentRef = React.useRef({ analyticRules, huntingQueries, asimParsers, workbooks });
+  contentRef.current = { analyticRules, huntingQueries, asimParsers, workbooks };
 
   const handleTutorialSelect = React.useCallback(
     (tourId: TourId) => {
+      const c = configRef.current;
+      const content = contentRef.current;
       const hasData =
-        config.meta.title !== "" ||
-        config.meta.publisher !== "" ||
-        config.schema.tableName !== "" ||
-        config.solution.publisherId !== "" ||
-        analyticRules.length > 0 ||
-        huntingQueries.length > 0 ||
-        asimParsers.length > 0 ||
-        workbooks.length > 0;
+        c.meta.title !== "" ||
+        c.meta.publisher !== "" ||
+        c.schema.tableName !== "" ||
+        c.solution.publisherId !== "" ||
+        content.analyticRules.length > 0 ||
+        content.huntingQueries.length > 0 ||
+        content.asimParsers.length > 0 ||
+        content.workbooks.length > 0;
 
       if (hasData) {
         setConfirmDialog({
@@ -254,7 +254,7 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
         resetAndStartTour(tourId);
       }
     },
-    [config.meta, config.schema, config.solution, analyticRules, huntingQueries, asimParsers, workbooks, setConfirmDialog, resetAndStartTour],
+    [setConfirmDialog, resetAndStartTour],
   );
 
   const steps: StepInfo[] = visibleSteps.map((step) => ({
@@ -292,9 +292,7 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
       description: "Reset all configuration and start fresh?",
       onConfirm: () => {
         reset();
-        setMode("connector");
-        setCurrentStepByMode({ connector: 0, solution: 0 });
-        setVisitedStepIds(new Set());
+        resetWizardNav();
       },
     });
   };

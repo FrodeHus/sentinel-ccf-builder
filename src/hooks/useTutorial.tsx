@@ -5,6 +5,16 @@ import { createTourEngine, type NavigateToStepFn } from "@/lib/tutorial/tour-eng
 import { pushTour } from "@/lib/tutorial/push-tour"
 import { pollerTour } from "@/lib/tutorial/poller-tour"
 
+const tours: Record<TourId, TourDefinition> = {
+  push: pushTour,
+  poller: pollerTour,
+}
+
+/** Look up a tour definition by ID */
+export function getTourDef(tourId: TourId): TourDefinition {
+  return tours[tourId]
+}
+
 interface TutorialContextValue {
   isRunning: boolean
   startTour: (tourId: TourId) => void
@@ -13,11 +23,6 @@ interface TutorialContextValue {
 }
 
 const TutorialContext = React.createContext<TutorialContextValue | null>(null)
-
-const tours: Record<TourId, TourDefinition> = {
-  push: pushTour,
-  poller: pollerTour,
-}
 
 export function TutorialProvider({ children }: { children: React.ReactNode }) {
   const [isRunning, setIsRunning] = React.useState(false)

@@ -13,7 +13,9 @@ interface TourEngineCallbacks {
   onDestroy: () => void
 }
 
-function createCheckmarkElement(): HTMLElement {
+/** Create checkmark SVG template once, clone for each popover */
+const checkmarkTemplate = (() => {
+  if (typeof document === "undefined") return null
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg")
   svg.classList.add("tutorial-checkmark")
   svg.setAttribute("viewBox", "0 0 24 24")
@@ -30,7 +32,14 @@ function createCheckmarkElement(): HTMLElement {
   path.setAttribute("d", "M4 12l5 5L20 7")
   svg.appendChild(path)
 
-  return svg as unknown as HTMLElement
+  return svg
+})()
+
+/** Fire clickSelector if present on the given stop */
+function fireClickSelector(stop: TourStop) {
+  if (!stop.clickSelector) return
+  const btn = document.querySelector(stop.clickSelector) as HTMLElement | null
+  btn?.click()
 }
 
 export function createTourEngine(
@@ -39,15 +48,28 @@ export function createTourEngine(
 ): Driver {
   const { navigateToStep, onDestroy } = callbacks
 
-  // Scoped cleanup state (not module-level)
+  // Separate timeout tracking: one for field listener, one for navigation polling
   let activeCleanup: (() => void) | null = null
-  let pendingTimeout: ReturnType<typeof setTimeout> | null = null
+  let fieldTimeout: ReturnType<typeof setTimeout> | null = null
+  let pollTimeout: ReturnType<typeof setTimeout> | null = null
 
-  function cleanupListener() {
-    if (pendingTimeout !== null) {
-      clearTimeout(pendingTimeout)
-      pendingTimeout = null
+  function clearFieldTimeout() {
+    if (fieldTimeout !== null) {
+      clearTimeout(fieldTimeout)
+      fieldTimeout = null
     }
+  }
+
+  function clearPollTimeout() {
+    if (pollTimeout !== null) {
+      clearTimeout(pollTimeout)
+      pollTimeout = null
+    }
+  }
+
+  function cleanupAll() {
+    clearFieldTimeout()
+    clearPollTimeout()
     if (activeCleanup) {
       activeCleanup()
       activeCleanup = null
@@ -55,7 +77,11 @@ export function createTourEngine(
   }
 
   function attachFieldListener(stop: TourStop) {
-    cleanupListener()
+    clearFieldTimeout()
+    if (activeCleanup) {
+      activeCleanup()
+      activeCleanup = null
+    }
 
     if (stop.expectedValue === null) return
 
@@ -96,6 +122,9 @@ export function createTourEngine(
     const nextStop = tour.stops[stopIndex]
     if (!nextStop) return
 
+    // Cancel any previous polling loop
+    clearPollTimeout()
+
     // Navigate the wizard to the correct tab/step first
     navigateToStep(nextStop.mode, nextStop.stepId)
 
@@ -106,11 +135,7 @@ export function createTourEngine(
     function tryMove() {
       attempts++
       if (isElementReady(nextStop.elementSelector)) {
-        // If this stop has a clickSelector, click it to pre-select the value
-        if (nextStop.clickSelector) {
-          const btn = document.querySelector(nextStop.clickSelector) as HTMLElement | null
-          btn?.click()
-        }
+        fireClickSelector(nextStop)
 
         // Scroll element into view before driver.js calculates overlay cutout
         const el = document.querySelector(nextStop.elementSelector)
@@ -120,13 +145,17 @@ export function createTourEngine(
         requestAnimationFrame(() => {
           requestAnimationFrame(() => {
             driverInstance.moveTo(stopIndex)
-            setTimeout(() => driverInstance.refresh(), 400)
+            // Refresh after scroll/animation settles
+            pollTimeout = setTimeout(() => {
+              pollTimeout = null
+              driverInstance.refresh()
+            }, 400)
           })
         })
         return
       }
       if (attempts < maxAttempts) {
-        pendingTimeout = setTimeout(tryMove, 50)
+        pollTimeout = setTimeout(tryMove, 50)
       }
     }
 
@@ -151,7 +180,9 @@ export function createTourEngine(
         // Validation badge (hidden by default)
         const badge = document.createElement("span")
         badge.className = "tutorial-validation-badge"
-        badge.appendChild(createCheckmarkElement())
+        if (checkmarkTemplate) {
+          badge.appendChild(checkmarkTemplate.cloneNode(true))
+        }
         const label = document.createElement("span")
         label.textContent = "Correct!"
         badge.appendChild(label)
@@ -164,7 +195,7 @@ export function createTourEngine(
         nextBtn.textContent = stopIndex === tour.stops.length - 1 ? "Finish" : "Next"
         nextBtn.style.display = stop.expectedValue === null ? "inline-flex" : "none"
         nextBtn.addEventListener("click", () => {
-          cleanupListener()
+          cleanupAll()
           if (stopIndex < tour.stops.length - 1) {
             navigateAndMoveTo(stopIndex + 1)
           } else {
@@ -176,8 +207,8 @@ export function createTourEngine(
         wrapper.appendChild(customFooter)
 
         // Attach field listener after a short delay so the DOM is ready
-        pendingTimeout = setTimeout(() => {
-          pendingTimeout = null
+        fieldTimeout = setTimeout(() => {
+          fieldTimeout = null
           attachFieldListener(stop)
         }, 500)
       },
@@ -195,7 +226,7 @@ export function createTourEngine(
     overlayClickBehavior: () => {},
     popoverClass: "tutorial-popover",
     onHighlightStarted: (_element, _step, { state }) => {
-      cleanupListener()
+      cleanupAll()
 
       const stepIndex = state.activeIndex
       if (stepIndex === undefined) return
@@ -203,19 +234,13 @@ export function createTourEngine(
       const stop = tour.stops[stepIndex]
       if (!stop) return
 
+      // Navigation + click are handled by navigateAndMoveTo for Next-button transitions.
+      // This hook fires for the initial drive() call where navigateAndMoveTo isn't used.
       navigateToStep(stop.mode, stop.stepId)
-
-      // If this stop has a clickSelector, click it to pre-select the value
-      if (stop.clickSelector) {
-        const btn = document.querySelector(stop.clickSelector) as HTMLElement | null
-        btn?.click()
-      }
-    },
-    onHighlighted: () => {
-      driverInstance.refresh()
+      fireClickSelector(stop)
     },
     onDestroyed: () => {
-      cleanupListener()
+      cleanupAll()
       onDestroy()
     },
   })

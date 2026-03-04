@@ -374,9 +374,12 @@ body {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  color: #22c55e;
+  color: var(--tutorial-success, #16a34a);
   font-size: 0.8125rem;
   font-weight: 500;
+}
+.dark .tutorial-validation-badge {
+  --tutorial-success: #4ade80;
 }
 
 .tutorial-checkmark {
