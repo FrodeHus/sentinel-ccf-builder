@@ -223,6 +223,7 @@ export function createTourEngine(
     stageRadius: 12,
     allowClose: true,
     allowKeyboardControl: false,
+    disableActiveInteraction: false,
     overlayClickBehavior: () => {},
     popoverClass: "tutorial-popover",
     onHighlightStarted: (_element, _step, { state }) => {
@@ -238,6 +239,11 @@ export function createTourEngine(
       // This hook fires for the initial drive() call where navigateAndMoveTo isn't used.
       navigateToStep(stop.mode, stop.stepId)
       fireClickSelector(stop)
+    },
+    onHighlighted: () => {
+      // Recalculate overlay cutout after highlight animation completes,
+      // critical for elements on newly-navigated wizard steps
+      driverInstance.refresh()
     },
     onDestroyed: () => {
       cleanupAll()
