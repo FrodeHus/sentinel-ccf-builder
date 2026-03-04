@@ -3,13 +3,13 @@ import { Button } from "@/components/ui/button"
 import { GraduationCap } from "lucide-react"
 import { useTutorial } from "@/hooks/useTutorial"
 import { TutorialPickerDialog } from "./TutorialPickerDialog"
-import type { ConnectorKind } from "@/lib/schemas"
+import type { TourId } from "@/lib/tutorial/types"
 
 interface TutorialButtonProps {
-  onResetAndStart: (kind: ConnectorKind) => void
+  onSelect: (tourId: TourId) => void
 }
 
-export function TutorialButton({ onResetAndStart }: TutorialButtonProps) {
+export function TutorialButton({ onSelect }: TutorialButtonProps) {
   const { isRunning } = useTutorial()
   const [dialogOpen, setDialogOpen] = React.useState(false)
 
@@ -27,7 +27,7 @@ export function TutorialButton({ onResetAndStart }: TutorialButtonProps) {
       <TutorialPickerDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        onResetAndStart={onResetAndStart}
+        onSelect={onSelect}
       />
     </>
   )

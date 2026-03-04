@@ -12,6 +12,8 @@ export interface TourStop {
   expectedValue: string | null
   matchStrategy: "exact" | "startsWith" | "endsWith" | "contains"
   side?: "top" | "bottom" | "left" | "right"
+  /** CSS selector of an element to click programmatically before showing this stop */
+  clickSelector?: string
 }
 
 export interface TourDefinition {

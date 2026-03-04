@@ -39,7 +39,14 @@ import { useWizardDialogs } from "./useWizardDialogs";
 import { ALL_STEPS } from "./step-definitions";
 import { TutorialButton } from "@/components/tutorial/TutorialButton";
 import type { NavigateToStepFn } from "@/lib/tutorial/tour-engine";
-import type { ConnectorKind } from "@/lib/schemas";
+import type { TourId } from "@/lib/tutorial/types";
+import { pushTour } from "@/lib/tutorial/push-tour";
+import { pollerTour } from "@/lib/tutorial/poller-tour";
+
+const tourDefs: Record<TourId, { connectorKind: "Push" | "RestApiPoller" }> = {
+  push: pushTour,
+  poller: pollerTour,
+};
 
 interface ConnectorWizardProps {
   initialProjectUrl?: string;
@@ -50,6 +57,7 @@ type WizardMode = "connector" | "solution"
 export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
   const {
     config,
+    updateMeta,
     updateSchema,
     updateDataFlow,
     updatePollerConfig,
@@ -69,7 +77,7 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
     workbooks,
   } = useConnectorConfig();
   const { theme, toggleTheme } = useTheme();
-  const { registerNavigator } = useTutorial();
+  const { registerNavigator, startTour } = useTutorial();
   const [mode, setMode] = React.useState<WizardMode>("connector");
   const [currentStepByMode, setCurrentStepByMode] = React.useState<Record<WizardMode, number>>({
     connector: 0,
@@ -206,15 +214,47 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
     registerNavigator(navigateToStep);
   }, [registerNavigator, connectorSteps, solutionSteps]);
 
-  // Handler for tutorial reset-and-start
-  const handleTutorialStart = React.useCallback(
-    (_kind: ConnectorKind) => {
+  // Handler for tutorial selection
+  const resetAndStartTour = React.useCallback(
+    (tourId: TourId) => {
       reset();
+      // Set the connector kind to match the tour so the correct wizard steps are visible
+      const tour = tourDefs[tourId];
+      if (tour) {
+        updateMeta({ connectorKind: tour.connectorKind });
+      }
       setMode("connector");
       setCurrentStepByMode({ connector: 0, solution: 0 });
       setVisitedStepIds(new Set());
+      startTour(tourId);
     },
-    [reset],
+    [reset, updateMeta, startTour],
+  );
+
+  const handleTutorialSelect = React.useCallback(
+    (tourId: TourId) => {
+      const hasData =
+        config.meta.title !== "" ||
+        config.meta.publisher !== "" ||
+        config.schema.tableName !== "" ||
+        config.solution.publisherId !== "" ||
+        analyticRules.length > 0 ||
+        huntingQueries.length > 0 ||
+        asimParsers.length > 0 ||
+        workbooks.length > 0;
+
+      if (hasData) {
+        setConfirmDialog({
+          title: "Start Tutorial",
+          description:
+            "Starting a tutorial will reset your current configuration. Any unsaved progress will be lost. Continue?",
+          onConfirm: () => resetAndStartTour(tourId),
+        });
+      } else {
+        resetAndStartTour(tourId);
+      }
+    },
+    [config.meta, config.schema, config.solution, analyticRules, huntingQueries, asimParsers, workbooks, setConfirmDialog, resetAndStartTour],
   );
 
   const steps: StepInfo[] = visibleSteps.map((step) => ({
@@ -296,7 +336,7 @@ export function ConnectorWizard({ initialProjectUrl }: ConnectorWizardProps) {
             </p>
           </div>
           <div className="flex items-center gap-1">
-            <TutorialButton onResetAndStart={handleTutorialStart} />
+            <TutorialButton onSelect={handleTutorialSelect} />
             <a
               href="https://github.com/FrodeHus/sentinel-connector-studio"
               target="_blank"

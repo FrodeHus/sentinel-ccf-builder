@@ -7,29 +7,23 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { useTutorial } from "@/hooks/useTutorial"
 import { Upload, Radio } from "lucide-react"
-import type { ConnectorKind } from "@/lib/schemas"
+import type { TourId } from "@/lib/tutorial/types"
 
 interface TutorialPickerDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onResetAndStart: (kind: ConnectorKind) => void
+  onSelect: (tourId: TourId) => void
 }
 
 export function TutorialPickerDialog({
   open,
   onOpenChange,
-  onResetAndStart,
+  onSelect,
 }: TutorialPickerDialogProps) {
-  const { startTour } = useTutorial()
-
-  const handleSelect = (tourId: "push" | "poller") => {
+  const handleSelect = (tourId: TourId) => {
     onOpenChange(false)
-    const kind: ConnectorKind = tourId === "push" ? "Push" : "RestApiPoller"
-    onResetAndStart(kind)
-    // startTour already has its own double-rAF for DOM settle
-    startTour(tourId)
+    onSelect(tourId)
   }
 
   return (
@@ -39,7 +33,6 @@ export function TutorialPickerDialog({
           <DialogTitle>Choose a Tutorial</DialogTitle>
           <DialogDescription>
             Follow a guided walkthrough to learn how to create a connector.
-            Your current configuration will be reset.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 gap-3 pt-2">

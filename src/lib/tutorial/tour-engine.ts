@@ -83,6 +83,57 @@ export function createTourEngine(
     }
   }
 
+  /** Check if an element is rendered and has visible dimensions */
+  function isElementReady(selector: string): boolean {
+    const el = document.querySelector(selector)
+    if (!el) return false
+    const rect = el.getBoundingClientRect()
+    return rect.width > 0 && rect.height > 0
+  }
+
+  /** Navigate to the wizard step for a stop, wait for the element to be visible, then move driver.js */
+  function navigateAndMoveTo(stopIndex: number) {
+    const nextStop = tour.stops[stopIndex]
+    if (!nextStop) return
+
+    // Navigate the wizard to the correct tab/step first
+    navigateToStep(nextStop.mode, nextStop.stepId)
+
+    // Poll until the target element is rendered with visible dimensions
+    let attempts = 0
+    const maxAttempts = 50 // ~2.5s at 50ms intervals
+
+    function tryMove() {
+      attempts++
+      if (isElementReady(nextStop.elementSelector)) {
+        // If this stop has a clickSelector, click it to pre-select the value
+        if (nextStop.clickSelector) {
+          const btn = document.querySelector(nextStop.clickSelector) as HTMLElement | null
+          btn?.click()
+        }
+
+        // Scroll element into view before driver.js calculates overlay cutout
+        const el = document.querySelector(nextStop.elementSelector)
+        el?.scrollIntoView({ block: "center", behavior: "instant" })
+
+        // Let click + scroll settle, then move driver.js to the step
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            driverInstance.moveTo(stopIndex)
+            setTimeout(() => driverInstance.refresh(), 400)
+          })
+        })
+        return
+      }
+      if (attempts < maxAttempts) {
+        pendingTimeout = setTimeout(tryMove, 50)
+      }
+    }
+
+    // Start after one frame to let React begin rendering
+    requestAnimationFrame(tryMove)
+  }
+
   const steps: DriveStep[] = tour.stops.map((stop, stopIndex) => ({
     element: stop.elementSelector,
     popover: {
@@ -115,7 +166,7 @@ export function createTourEngine(
         nextBtn.addEventListener("click", () => {
           cleanupListener()
           if (stopIndex < tour.stops.length - 1) {
-            driverInstance.moveTo(stopIndex + 1)
+            navigateAndMoveTo(stopIndex + 1)
           } else {
             driverInstance.destroy()
           }
@@ -140,7 +191,8 @@ export function createTourEngine(
     stagePadding: 8,
     stageRadius: 12,
     allowClose: true,
-    disableActiveInteraction: false,
+    allowKeyboardControl: false,
+    overlayClickBehavior: () => {},
     popoverClass: "tutorial-popover",
     onHighlightStarted: (_element, _step, { state }) => {
       cleanupListener()
@@ -152,6 +204,15 @@ export function createTourEngine(
       if (!stop) return
 
       navigateToStep(stop.mode, stop.stepId)
+
+      // If this stop has a clickSelector, click it to pre-select the value
+      if (stop.clickSelector) {
+        const btn = document.querySelector(stop.clickSelector) as HTMLElement | null
+        btn?.click()
+      }
+    },
+    onHighlighted: () => {
+      driverInstance.refresh()
     },
     onDestroyed: () => {
       cleanupListener()

@@ -47,10 +47,15 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       const tour = tours[tourId]
       if (!tour) return
 
-      const navigate = navigatorRef.current
-      if (!navigate) {
+      if (!navigatorRef.current) {
         console.warn("Tutorial navigator not registered. Is ConnectorWizard mounted?")
         return
+      }
+
+      // Wrapper that always reads the latest navigator from the ref,
+      // so it picks up re-registrations when connectorSteps change
+      const navigate: NavigateToStepFn = (mode, stepId) => {
+        navigatorRef.current?.(mode, stepId)
       }
 
       // Navigate to the first stop before starting

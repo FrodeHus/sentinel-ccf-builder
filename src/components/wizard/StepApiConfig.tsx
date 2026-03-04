@@ -82,6 +82,7 @@ export function StepApiConfig() {
                         <button
                           key={type}
                           type="button"
+                          data-tutorial={`auth-${type}`}
                           onClick={() =>
                             update((prev) => ({
                               ...prev,
